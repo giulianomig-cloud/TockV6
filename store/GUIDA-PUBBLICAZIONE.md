@@ -55,7 +55,7 @@ Senza questo file l'app si apre con una barra in alto come un browser.
 In Play Console → *Crea app*:
 - Lingua predefinita: Italiano · Nome: dal file `scheda-store.md` · Tipo: Gioco · Gratuito.
 - *Scheda dello store principale*: testi da `scheda-store.md`, icona `icon-v6b-512.png`,
-  immagine in evidenza `store/banner-1024x500.png`, screenshot da `store/screenshots/`.
+  immagine in evidenza `store/banner-1024x500.png` (inglese: `banner-en-1024x500.png`), screenshot da `store/google-play/it/` (inglese: `store/google-play/en/`).
 - *Contenuti dell'app*: Privacy (link a `privacy.html`), Annunci = No, Accesso all'app = tutto
   accessibile senza account, Classificazione (questionario: risposte in `scheda-store.md`),
   Sicurezza dei dati (risposte in `scheda-store.md`), Pubblico di destinazione (13+ consigliato
@@ -90,6 +90,6 @@ Se la rifiutano, si possono aggiungere funzioni da app vera (es. notifiche "tocc
 - `privacy.html` — pagina Privacy (italiano + riassunto in inglese).
 - `manifest.json` — completato per PWABuilder (id, lingua, categoria, scorciatoia "Gioca subito").
 - `store/scheda-store.md` — tutti i testi della scheda.
-- `store/banner-1024x500.png` e `store/screenshots/` — immagini per la scheda
+- `store/banner-1024x500.png`, `store/google-play/` e `store/apple/` — immagini per le schede (italiano e inglese)
   (`store/banner.html` serve solo a rigenerare il banner).
 - Chat "a frasi pronte" nelle partite con sconosciuti: è quello che chiedono gli store per le chat fra estranei.

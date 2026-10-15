@@ -66,7 +66,8 @@ tock,gioco da tavolo,carte,coppie,pedine,squadre,multiplayer,amici,online,famigl
 
 ## Immagini già pronte (cartella `store/`)
 - `banner-1024x500.png` — immagine in evidenza (Google Play, obbligatoria)
-- `screenshots/1-home.png` … `5-impara.png` — 1080×1920, schermate del telefono (ne servono almeno 2)
+- Google Play: `google-play/it/1-home.png` … `5-impara.png` — 1080×1920 (ne servono almeno 2)
+- App Store: `apple/it/1-home.png` … `5-impara.png` — 1290×2796 (iPhone 6,7"; Apple ne vuole da 3 a 10)
 - Icona 512×512: `icon-v6b-512.png` nella cartella principale
 
 ---
@@ -118,4 +119,9 @@ tock,board game,cards,team,pawns,multiplayer,friends,online,family,partners
 
 ## English images (folder `store/`)
 - `banner-en-1024x500.png` — feature graphic (`banner-en.html` regenerates it)
-- `screenshots-en/1-home.png` … `5-learn.png` — 1080×1920
+- Google Play: `google-play/en/1-home.png` … `5-learn.png` — 1080×1920
+- App Store: `apple/en/1-home.png` … `5-learn.png` — 1290×2796
+
+## Diritti / Copyright
+- Google Play → nome sviluppatore: **Mig**
+- App Store Connect → campo "Copyright": **2026 Mig** (il venditore, con account personale, è il nome e cognome veri)

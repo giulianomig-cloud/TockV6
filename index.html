@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- Tock © 2026 Mig. Tutti i diritti riservati / All rights reserved.
+     Codice, grafica, suoni e regole dell'app: vietato copiarli, modificarli o ripubblicarli senza permesso scritto. -->
 <html lang="it">
 <head>
 <meta charset="UTF-8" />
@@ -7951,7 +7953,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.08";
+const APP_VERSION = "v6.10";
 
 let myColor = null;
 let myRoomId = null;
@@ -13208,7 +13210,9 @@ function renderDealerDrawScreen(state) {
   const slotsByColor = {};
   const grid = el("div", { class: "dealer-draw-grid" });
   const dealerNames = {};
-  COLORS.forEach((c) => {
+  // v6.10: riquadri nello stesso ordine degli angoli del tabellone (Rosso e Verde in alto,
+  // Blu e Giallo in basso), non nell'ordine di COLORS: prima Giallo e Blu erano scambiati.
+  ["red", "green", "blue", "yellow"].forEach((c) => {
     dealerNames[c] = playerName(state, c);
     // Mostra anche il nome del giocatore (non solo il colore) — playerName
     // ricade già da solo sul nome del colore se non c'è un nome impostato

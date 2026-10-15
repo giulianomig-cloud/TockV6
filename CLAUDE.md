@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.08** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.10** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -80,10 +80,31 @@
 - Nelle partite miste (un telefono in italiano e uno in inglese) ognuno vede la propria lingua; le frasi pronte
   della chat e quelle dei computer si traducono, i messaggi scritti a mano no.
 
+## Diritti (v6.09)
+- "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`
+  (IT + EN), "© 2026 Mig" in fondo alla home. Negli store: Google Play con nome sviluppatore "Mig"; su Apple
+  (account personale) come venditore compare per forza nome e cognome veri, il campo Copyright resta "2026 Mig".
+
+## Guadagni e Tock Plus (DOPO la prima pubblicazione)
+- Deciso: la prima versione sugli store è GRATIS, senza pubblicità né acquisti. Tock Plus si aggiunge dopo.
+- Piano di Plus (proposto, da confermare con anteprime): acquisto unico 2,99 € (Android + iPhone), MAI vantaggi nel
+  gioco, solo cose estetiche: stili grafici nuovi (idee: "Marmo e oro", "Spiaggia", "Neon notturno"), pedine speciali
+  (metallizzate, a righe, con emoji al posto dei pallini), ⭐ accanto al nome + colore del nome, festa della vittoria a
+  scelta, reazioni extra, "Le mie statistiche". Da decidere: se i 5 stili attuali restano gratis (consigliato) o no.
+- Da sapere: Google/Apple trattengono il 15%; guadagnando si diventa "commerciante" UE (indirizzo visibile su Google
+  Play, dichiarazione dei redditi → consigliato commercialista); servono Google Play Billing e acquisti Apple nei gusci.
+- Pubblicità: eventualmente solo tra una partita e l'altra (richiede banner consenso GDPR); mai durante la partita.
+- Costi previsti: Google Play 25 $ una tantum, Apple 99 $/anno, GitHub privato / Cloudflare Pages / Codemagic gratis,
+  Firebase gratis fino a ~100 collegati insieme (poi piano Blaze, pochi euro).
+- Piano di pubblicazione deciso: repository TockV6 PRIVATO + sito su Cloudflare Pages (dominio tutto suo, così
+  assetlinks.json per Android va alla radice) + codice "rimescolato" nella versione pubblicata; app iPhone con un guscio
+  costruito da Codemagic (l'utente ha Windows, niente Mac); account Apple PERSONALE (venditore = nome vero).
+
 ## Store (v6)
 - Cartella `store/`: `GUIDA-PUBBLICAZIONE.md` (passi per Google Play con PWABuilder e per l'App Store),
   `scheda-store.md` (testi, risposte ai questionari), `banner-1024x500.png` (rigenerabile da `banner.html`),
-  `screenshots/` (1080x1920).
+  `google-play/it|en/` (1080x1920) e `apple/it|en/` (1290x2796, iPhone 6,7"),
+  rifatte alla v6.09; banner rigenerabili da `banner.html` / `banner-en.html`.
 - `privacy.html` (linkata in fondo alla home): email di contatto miroga.dream@gmail.com (scelta dall'utente). È in APP_SHELL di `sw.js`.
 - Per togliere la barra del browser nell'app Android serve `/.well-known/assetlinks.json` alla RADICE del dominio
   (con GitHub Pages su `utente.github.io/TockV5` va in un repository `utente.github.io` + `.nojekyll`).
@@ -196,6 +217,8 @@
   (40x56), la carta scivola dritta senza giravolte; suono `dealerCard` = fruscio morbido (in tutti gli stili, al posto
   di `cardFlick` che resta per le carte in partita); il posto della carta (`.dealer-pile`) è riservato da subito, così
   i riquadri non si allargano alla prima carta.
+  Dalla v6.10 i 4 riquadri seguono gli angoli del tabellone: Rosso e Verde in alto, BLU e GIALLO in basso (prima
+  Giallo/Blu erano scambiati rispetto al tabellone, segnalato).
 - Animazioni "Glassy OTP" (v5.57, da un video TikTok dell'utente): in home il codice stanza si scrive in
   caselle (una per lettera, input vero invisibile sopra; casella attiva oro che "respira", lettera con
   saltello). Dopo "Gioca": rotellina "Cerco la stanza…", le caselle si mettono in cerchio, girano e si
