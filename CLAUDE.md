@@ -240,8 +240,9 @@
   visibili ("qualche favilla falla intendere") e un filo di fumo.
 - Notte da casinò: proposte A velluto bordeaux / B art déco nero e oro / C luci di Las Vegas SCARTATE (resta com'è).
 - Icona dell'app (v6.03, immagine mandata dall'utente): 4 tappi lucidi (rosso 1 pallino, verde 2, blu 3, giallo 4)
-  su blu notte a tutto campo, file `icon-v6-180/192/512.png` + `icon-v6-512-maskable.png` (tappi nell'80% centrale
-  per i ritagli tondi di Android). Le vecchie `icon-v3-*` sono state tolte. Proposte scartate in passato: logo su
+  in un riquadro blu notte col BORDINO BLU LUMINOSO, su fondo marrone: va usata COSÌ COM'È (l'utente l'ha chiesto
+  esplicitamente, scartata la versione senza bordino a tutto campo). File `icon-v6-180/192/512.png` +
+  `icon-v6-512-maskable.png` (stessa immagine rimpicciolita al 78% su marrone, per i ritagli tondi di Android). Le vecchie `icon-v3-*` sono state tolte. Proposte scartate in passato: logo su
   crema, pedine sul tabellone di legno, carta + pedine, pedine su crema. Non riproporle.
 - Animazioni dei menu portate nel GIOCO (v5.65, scelti i gruppi 1 e 2 dai video di prova):
   1) Elemento che vola: ⚙️ Impostazioni, ≡ Registro, 💬 chat (anteprima o pulsante) e "📜 Regolamento" si
