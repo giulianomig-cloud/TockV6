@@ -23,12 +23,20 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.10** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.12** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
   - `APP_VERSION` in `index.html` (es. `"v5.30"`) — è il numero mostrato nella lobby;
   - `CACHE_VERSION` in `sw.js` (es. `"v5-30"`) — serve a scartare le cache vecchie sui telefoni.
+- Nomenclatura (decisa con l'utente):
+  - Gioco: `v6.xx`, sale di 1 a OGNI aggiornamento; il primo numero cambia solo per i grandi passi
+    (es. **v7.00** quando arriva Tock Plus).
+  - Store (Google Play e Apple): la versione è il numero del gioco nel momento in cui si pubblica, senza "v"
+    (es. gioco v6.12 → versione store **6.12**); il codice interno è lo stesso numero tutto attaccato
+    (Google "versionCode" / Apple "build" = **612**; per v7.00 = **700**). Deve sempre salire.
+  - Si ripubblica sugli store SOLO se cambia la "scatola" (icona, nome, permessi, guscio iPhone): il gioco si
+    aggiorna da solo dal sito.
 
 ## Regole da ricordare
 - Tutte le pedine (proprie, del compagno, avversarie) si mangiano con le stesse regole:
@@ -58,6 +66,12 @@
   connessione vecchia resta "appesa"): UN posto per telefono (`mmDeviceToken`, chiave `tock-mm-device`; chi rientra
   torna sul proprio posto) + segno di vita ogni 15 s in `draft/seen/<token>` (`mmStartBeat`); chi tace da 45 s è un
   fantasma e lo toglie chiunque passi (`mmPruneStale`, anche prima di completare coi computer).
+- v6.12 (segnalato: nell'estrazione del mazziere nomi e colori diversi dal tabellone): Firebase mostrava subito il
+  risultato PROVVISORIO delle transazioni con scelte a caso (squadre, colori, nomi dei computer, mazzo); se il server
+  le rifaceva, il telefono restava con quelle vecchie (anche col colore sbagliato). Ora `updateState`, `mmJoinRoom` e
+  `joinDraftRoom` usano `transaction(fn, undefined, false)` (niente risultato provvisorio: si vede solo quello
+  confermato); `onStateChange` ricalcola `myColor` dal proprio token; l'estrazione si ridisegna se cambia la "firma"
+  (`dealerDrawAnimShown.sig`). Non togliere quel `false`.
 - Al 4° giocatore `mmAutoTeams` decide coppie e colori a caso e distribuisce NELLA STESSA transazione: niente
   schermate di estrazione, si va dritti al tabellone. "🤖 Normale / Difficile" completa i posti liberi col computer.
 - Schermata d'attesa `renderMatchWaiting` (radar col 🎲, 4 posti, tempo, "Annulla"). In home "▶︎ Torna alla partita
@@ -237,6 +251,7 @@
   `cfKey` "tic" a ogni lettera, `cfWhoosh` fruscio che sale quando partono le caselle, `cfTick` 4 colpetti
   durante l'attesa, `cfSuccess` arpeggio a campanella Do-Mi-Sol-Do con i cerchi verdi, `fbOk` due note
   quando un pulsante diventa verde (anche "Siediti" riuscito), `fbFail` due note che scendono sul rosso.
+- Reazioni (v6.11): 😂 😱 👏 🎉 🙏 🔥. Il 🖕 è stato TOLTO (chiesto dall'utente): mai emoji offensive.
 - Reazioni in partita (v5.60): oltre all'emoji grande con il nome, ne salgono altre 7 più piccole che
   ondeggiano e svaniscono ("come i cuori nelle dirette", `reactionBurst`). Non per il 👋 della Sveglia.
 - Passaggi tra schermate (v5.61, scelta "A · Elemento che vola" fra A / B scorrimento laterale / C
