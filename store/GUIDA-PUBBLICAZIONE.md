@@ -54,7 +54,7 @@ Senza questo file l'app si apre con una barra in alto come un browser.
 ### 4. Scheda dello store
 In Play Console → *Crea app*:
 - Lingua predefinita: Italiano · Nome: dal file `scheda-store.md` · Tipo: Gioco · Gratuito.
-- *Scheda dello store principale*: testi da `scheda-store.md`, icona `icon-v6-512.png`,
+- *Scheda dello store principale*: testi da `scheda-store.md`, icona `icon-v6b-512.png`,
   immagine in evidenza `store/banner-1024x500.png`, screenshot da `store/screenshots/`.
 - *Contenuti dell'app*: Privacy (link a `privacy.html`), Annunci = No, Accesso all'app = tutto
   accessibile senza account, Classificazione (questionario: risposte in `scheda-store.md`),
