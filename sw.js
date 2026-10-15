@@ -10,7 +10,7 @@
 //
 // Cambia CACHE_VERSION ad ogni nuova build pubblicata (tienilo allineato ad
 // APP_VERSION in index.html) così le cache vecchie vengono scartate subito.
-const CACHE_VERSION = "v6-11";
+const CACHE_VERSION = "v6-12";
 const CACHE_NAME = "tock-cache-" + CACHE_VERSION;
 
 const APP_SHELL = [

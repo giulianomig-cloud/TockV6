@@ -6361,7 +6361,7 @@ async function updateState(roomId, mutatorFn) {
         caughtError = e;
         return undefined; // abort this transaction attempt
       }
-    })
+    }, undefined, false)
     .catch((e) => {
       caughtError = e;
       return null;
@@ -7953,7 +7953,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.11";
+const APP_VERSION = "v6.12";
 
 let myColor = null;
 let myRoomId = null;
@@ -9706,7 +9706,7 @@ async function mmJoinRoom(roomId, recycle, token) {
       mmAutoTeams(st);
       outcome = "ok";
       return st;
-    })
+    }, undefined, false)
     .catch((e) => { console.error(e); outcome = "error"; return null; });
   if (outcome === "ok" && res && res.committed === false) outcome = "taken";
   return outcome;
@@ -10112,7 +10112,7 @@ async function joinDraftRoom(roomId) {
         caughtError = e;
         return undefined;
       }
-    })
+    }, undefined, false)
     .catch((e) => {
       caughtError = e;
       return null;
@@ -13108,6 +13108,18 @@ function onStateChange(state) {
   // Schermata di gioco non presente (si è usciti dal tavolo ma l'ascolto è
   // rimasto): niente da disegnare, e nessun bot da far avanzare da qui.
   if (!document.getElementById("hand-wrap")) return;
+  // v6.12: il colore vero è quello del proprio posto nella partita salvata. Se il
+  // telefono ne aveva preso un altro (segnalato: estrazione e tabellone con nomi e
+  // colori diversi), si corregge e si ridisegna il tavolo.
+  if (myToken) {
+    const real = COLORS.find((c) => state.players[c] && state.players[c].token === myToken);
+    if (real && real !== myColor) {
+      myColor = real;
+      try { localStorage.setItem("tock-claim-" + myRoomId + "-" + myColor, myToken); } catch (e) {}
+      renderGameShell();
+      if (!document.getElementById("hand-wrap")) return;
+    }
+  }
   maybeAdvanceBotTurn(state);
   maybeAdvanceBotChat(state);
   maybePlaySounds(state);
@@ -13204,9 +13216,15 @@ function renderDealerDrawScreen(state) {
     return;
   }
 
-  if (dealerDrawAnimShown.forRoom === myRoomId) return; // già in corso o conclusa per questa stanza
+  // v6.12: "firma" dell'estrazione (carte pescate + nomi): se cambia mentre la si
+  // guarda (dati non ancora confermati dal server), la si ridisegna da capo.
+  const drawSig = state.dealerDraw.sequence.map((x) => x.color + x.card).join(",") + "|" + COLORS.map((c) => playerName(state, c)).join(",");
+  if (dealerDrawAnimShown.forRoom === myRoomId) {
+    if (dealerDrawAnimShown.sig === drawSig || dealerDrawAnimShown.done) return; // già in corso o conclusa
+    closePicker();
+  }
 
-  dealerDrawAnimShown = { forRoom: myRoomId, done: false };
+  dealerDrawAnimShown = { forRoom: myRoomId, done: false, sig: drawSig };
   const slotsByColor = {};
   const grid = el("div", { class: "dealer-draw-grid" });
   const dealerNames = {};
