@@ -6,10 +6,9 @@ si aggiorna anche l'app: non serve ripubblicarla a ogni versione.
 
 Prima di tutto, una volta sola:
 
-1. **Indirizzo del sito.** Serve l'indirizzo esatto dove è pubblicato Tock (quello che apri sul telefono).
-2. **Email di contatto.** In `privacy.html` c'è scritto due volte `[EMAIL DI CONTATTO]`: va sostituito
-   con l'email che vuoi mostrare ai giocatori (gli store la mostrano comunque nella scheda).
-3. **Pagina Privacy** online: `https://<indirizzo-del-sito>/privacy.html` (c'è già, arriva con questa versione).
+1. **Indirizzo del sito:** https://giulianomig-cloud.github.io/TockV6/
+2. **Email di contatto:** miroga.dream@gmail.com (già scritta in `privacy.html`; usala anche in Play Console).
+3. **Pagina Privacy** online: `https://giulianomig-cloud.github.io/TockV6/privacy.html` (c'è già, arriva con questa versione).
 
 ---
 
@@ -88,7 +87,7 @@ Se la rifiutano, si possono aggiungere funzioni da app vera (es. notifiche "tocc
 
 ## Cosa è già pronto in questa versione (v6.00)
 
-- `privacy.html` — pagina Privacy (italiano + riassunto in inglese); manca solo l'email.
+- `privacy.html` — pagina Privacy (italiano + riassunto in inglese).
 - `manifest.json` — completato per PWABuilder (id, lingua, categoria, scorciatoia "Gioca subito").
 - `store/scheda-store.md` — tutti i testi della scheda.
 - `store/banner-1024x500.png` e `store/screenshots/` — immagini per la scheda

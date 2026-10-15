@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.01** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.02** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -65,11 +65,11 @@
 - Cartella `store/`: `GUIDA-PUBBLICAZIONE.md` (passi per Google Play con PWABuilder e per l'App Store),
   `scheda-store.md` (testi, risposte ai questionari), `banner-1024x500.png` (rigenerabile da `banner.html`),
   `screenshots/` (1080x1920).
-- `privacy.html` (linkata in fondo alla home): contiene `[EMAIL DI CONTATTO]` da sostituire con l'email che
-  l'utente vuole mostrare. È in APP_SHELL di `sw.js`.
+- `privacy.html` (linkata in fondo alla home): email di contatto miroga.dream@gmail.com (scelta dall'utente). È in APP_SHELL di `sw.js`.
 - Per togliere la barra del browser nell'app Android serve `/.well-known/assetlinks.json` alla RADICE del dominio
   (con GitHub Pages su `utente.github.io/TockV5` va in un repository `utente.github.io` + `.nojekyll`).
-- Ancora da sapere dall'utente: indirizzo del sito, email di contatto, impronte SHA-256 della chiave di firma.
+- Sito della V6: https://giulianomig-cloud.github.io/TockV6/ (GitHub Pages da main).
+- Ancora da sapere dall'utente: impronte SHA-256 della chiave di firma (dopo PWABuilder / Play Console).
 
 ## Controlli automatici
 - In `tests/` ci sono i controlli delle regole del gioco (mazzo, scambio, movimenti, casa,
