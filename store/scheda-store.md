@@ -68,3 +68,54 @@ tock,gioco da tavolo,carte,coppie,pedine,squadre,multiplayer,amici,online,famigl
 - `banner-1024x500.png` — immagine in evidenza (Google Play, obbligatoria)
 - `screenshots/1-home.png` … `5-impara.png` — 1080×1920, schermate del telefono (ne servono almeno 2)
 - Icona 512×512: `icon-v6-512.png` nella cartella principale
+
+---
+
+# English store listing (v6.05)
+
+In Google Play Console: *Main store listing → Manage translations → Add your own translation → English (United States)*, then paste these texts and upload the English images.
+
+## App name (max 30)
+Tock - Team Board Game
+
+## Short description (Google Play, max 80)
+The team board game played with cards: play now online or with your friends.
+
+## Subtitle (App Store, max 30)
+Team board game with cards
+
+## Full description (max 4000)
+Tock is the team board game where you play cards instead of rolling dice. Two teams, four colors, sixteen pawns: the first pair to bring all their pawns home wins.
+
+🎲 PLAY NOW
+Tap "Play now" and Tock seats you at a table with other available players. Don't want to wait? The computer takes the free seats, in Normal or Hard mode.
+
+👥 WITH FRIENDS
+Pick a code, have your friends type it, and play in your own private room, each on their own phone. Sit down, choose your color and go.
+
+🃏 THE RULES OF TOCK
+• Ace and King bring a pawn out
+• The 4 moves backwards
+• The 7 can be split between pawns and captures everything in its way
+• The Jack swaps two pawns
+• At every hand you pass a card to your partner: teamwork is everything
+
+🎓 LEARN TO PLAY
+Nine short lessons on the real board, to learn the rules by playing.
+
+🏆 LEADERBOARD
+Wins and win rate, to see who's the best.
+
+✨ AND MORE
+• Room chat with reactions and emoji
+• Five graphic styles: Classic, Wood, Night, Bright and Arcade
+• Light and dark theme, sounds and vibration
+• Italian and English
+• No ads and no account: pick a name and play
+
+## Keywords (App Store, max 100)
+tock,board game,cards,team,pawns,multiplayer,friends,online,family,partners
+
+## English images (folder `store/`)
+- `banner-en-1024x500.png` — feature graphic (`banner-en.html` regenerates it)
+- `screenshots-en/1-home.png` … `5-learn.png` — 1080×1920

@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.04** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.05** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -64,6 +64,20 @@
   in corso" (`fillResumeMatch`, chiave `tock-last-match`). Scorciatoia dell'icona: `index.html?gioca=1`.
 - Nelle stanze `AUTO-` la chat ha SOLO frasi pronte (`QUICK_CHAT_PHRASES`), niente testo libero: è la condizione
   degli store per le chat fra sconosciuti. Con gli amici la chat resta libera.
+
+## Lingua dell'app (v6.05): italiano / inglese
+- Lingua: quella scelta a mano (`tock-lang`), altrimenti quella del telefono (italiano solo se il telefono è
+  in italiano, altrimenti inglese). Si cambia nelle Impostazioni (sezione "🌍 Lingua", `langSwitch`) e in fondo
+  alla home (link "🇬🇧 English" / "🇮🇹 Italiano"); `setLang` cambia al volo senza ricaricare.
+- Il codice resta scritto IN ITALIANO. In inglese le scritte si traducono mentre compaiono sullo schermo
+  (MutationObserver): `I18N_EN` = frasi esatte, `I18N_PATTERNS` = frasi con nomi/numeri, `tr(s)` per tradurre a
+  mano (finestre confirm/prompt/alert sono già coperte, titolo della pagina, testo di condivisione).
+  OGNI NUOVA SCRITTA va aggiunta anche in `I18N_EN` (o in `I18N_PATTERNS` se contiene nomi/numeri).
+- Le zone `.notranslate` (codici) NON si traducono: lì usare `tr()` direttamente nel codice.
+- Il registro delle mosse è salvato in italiano nella partita (uguale per tutti): in inglese si traduce solo
+  quando si mostra (`trLog`, `logColorName`); i test di `LOG_EVENT_TYPES` usano sempre la riga italiana.
+- Nelle partite miste (un telefono in italiano e uno in inglese) ognuno vede la propria lingua; le frasi pronte
+  della chat e quelle dei computer si traducono, i messaggi scritti a mano no.
 
 ## Store (v6)
 - Cartella `store/`: `GUIDA-PUBBLICAZIONE.md` (passi per Google Play con PWABuilder e per l'App Store),
