@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.12** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.13** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -76,6 +76,9 @@
   schermate di estrazione, si va dritti al tabellone. "🤖 Normale / Difficile" completa i posti liberi col computer.
 - Schermata d'attesa `renderMatchWaiting` (radar col 🎲, 4 posti, tempo, "Annulla"). In home "▶︎ Torna alla partita
   in corso" (`fillResumeMatch`, chiave `tock-last-match`). Scorciatoia dell'icona: `index.html?gioca=1`.
+- v6.13: "▶︎ Torna alla partita in corso" vale anche per le stanze CON GLI AMICI (mostra "Stanza CODICE"; anche mentre
+  si aspetta l'inizio, se si è già seduti): `renderGameShell` salva l'ultima stanza (`mmRememberRoom`). Le caselle del
+  codice in home si trovano già scritto l'ultimo codice usato con gli amici (`tock-last-code`, mai i codici AUTO-).
 - Nelle stanze `AUTO-` la chat ha SOLO frasi pronte (`QUICK_CHAT_PHRASES`), niente testo libero: è la condizione
   degli store per le chat fra sconosciuti. Con gli amici la chat resta libera.
 

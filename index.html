@@ -973,7 +973,10 @@ body:has(#app > .lobby-card), .tut-overlay { background: var(--bx-bg); }
 :root[data-theme="dark"] .bx-as-link { color: #F2C45A; }
 .bx-resume-wrap:empty { display: none; }
 .bx-resume { all: unset; box-sizing: border-box; display: flex; width: 100%; justify-content: space-between; align-items: center; margin-top: 12px; padding: 14px 18px; border-radius: 20px; background: var(--bx-card); box-shadow: var(--bx-shadow), inset 0 0 0 2px #3FA77E; color: var(--bx-ink); font-weight: 800; cursor: pointer; }
-.bx-resume b { font-size: 1.3rem; color: #3FA77E; }
+.bx-resume > b { font-size: 1.3rem; color: #3FA77E; }
+.bx-resume-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bx-resume-txt small { font-size: .78rem; font-weight: 700; color: var(--bx-sub); }
+.bx-resume-txt small b { color: var(--bx-ink); letter-spacing: .04em; }
 .bx-hero.bx-friends { margin-top: 12px; background: var(--bx-card); box-shadow: var(--bx-shadow); padding: 18px 16px 16px; border-radius: 24px; }
 .bx-hero.bx-friends h1 { font-size: 1.2rem; letter-spacing: -.01em; }
 .bx-hero.bx-friends p { margin: 4px 0 12px; font-size: .85rem; color: var(--bx-sub); }
@@ -7953,7 +7956,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.12";
+const APP_VERSION = "v6.13";
 
 let myColor = null;
 let myRoomId = null;
@@ -8080,7 +8083,8 @@ function renderLobby() {
   const roomInput = el("input", {
     id: "room-input",
     placeholder: "Codice stanza",
-    value: myRoomId || "",
+    // v6.13: si trova già scritto l'ultimo codice usato con gli amici (non quelli AUTO- di "Gioca subito").
+    value: (myRoomId && !isMatchRoom(myRoomId) ? myRoomId : lastFriendsCode()) || "",
     autocapitalize: "characters",
     autocomplete: "off",
     autocorrect: "off",
@@ -9987,7 +9991,13 @@ function tAvatarColor(s) {
 
 // "Torna alla partita" in home: l'ultima partita di "Gioca subito", se è
 // ancora in corso e questo telefono ci è seduto.
+// v6.13: vale per tutte le partite (anche con gli amici), non solo per "Gioca subito".
+function lastFriendsCode() {
+  try { return localStorage.getItem("tock-last-code") || ""; } catch (e) { return ""; }
+}
 function mmRememberRoom(roomId) {
+  if (!roomId) return;
+  if (!isMatchRoom(roomId)) { try { localStorage.setItem("tock-last-code", roomId); } catch (e) {} }
   try { localStorage.setItem(MM_LAST_KEY, roomId); } catch (e) {}
 }
 async function fillResumeMatch(box) {
@@ -9997,7 +10007,9 @@ async function fillResumeMatch(box) {
   let st = null;
   try { const snap = await roomRef(roomId).get(); st = snap.exists() ? normalizeState(snap.val()) : null; } catch (e) { return; }
   if (!box.isConnected) return;
-  const mine = st && st.phase !== "lobby" && st.phase !== "finished" && COLORS.some((c) => {
+  // Con gli amici vale anche mentre si aspetta l'inizio (si è già seduti); in "Gioca subito"
+  // l'attesa non conta (lì si rientra rifacendo la ricerca).
+  const mine = st && st.phase !== "finished" && (st.phase !== "lobby" || !isMatchRoom(roomId)) && COLORS.some((c) => {
     const p = st.players[c];
     let saved = null;
     try { saved = localStorage.getItem("tock-claim-" + roomId + "-" + c); } catch (e) {}
@@ -10008,7 +10020,10 @@ async function fillResumeMatch(box) {
     const input = document.getElementById("room-input");
     if (input) { input.value = roomId; codeBoxesDraw(input.parentNode); }
     continueFromRoomCode();
-  } }, el("span", {}, "▶︎ Torna alla partita in corso"), el("b", {}, "›")));
+  } },
+    el("span", { class: "bx-resume-txt" }, el("span", {}, "▶︎ Torna alla partita in corso"),
+      isMatchRoom(roomId) ? "" : el("small", {}, el("span", {}, "Stanza"), " ", el("b", { class: "notranslate", translate: "no" }, roomId))),
+    el("b", {}, "›")));
 }
 
 // ================= Estrazione squadre =================
@@ -10723,6 +10738,7 @@ function detachFromGameRoom() {
 function renderGameShell() {
   const root = $("#app");
   root.innerHTML = "";
+  mmRememberRoom(myRoomId); // v6.13: "Torna alla partita in corso" in home, anche con gli amici
   // renderGameShell() può essere richiamata più volte nella stessa sessione
   // (es. rientro/recupero nome, fine estrazione squadre) e ogni volta crea
   // un #chat-wrap NUOVO — ma _chatFabRenderKey (in renderChatFab) è una
