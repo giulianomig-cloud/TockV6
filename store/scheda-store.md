@@ -61,8 +61,8 @@ tock,gioco da tavolo,carte,coppie,pedine,squadre,multiplayer,amici,online,famigl
 - Nessun account: l'app non crea account
 
 ## Link
-- Privacy: `https://<indirizzo-del-sito>/privacy.html`
-- Sito: `https://<indirizzo-del-sito>/`
+- Privacy: `https://giulianomig-cloud.github.io/TockV6/privacy.html`
+- Sito: `https://giulianomig-cloud.github.io/TockV6/`
 
 ## Immagini già pronte (cartella `store/`)
 - `banner-1024x500.png` — immagine in evidenza (Google Play, obbligatoria)
