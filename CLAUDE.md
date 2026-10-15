@@ -85,6 +85,21 @@
   (IT + EN), "© 2026 Mig" in fondo alla home. Negli store: Google Play con nome sviluppatore "Mig"; su Apple
   (account personale) come venditore compare per forza nome e cognome veri, il campo Copyright resta "2026 Mig".
 
+## Guadagni e Tock Plus (DOPO la prima pubblicazione)
+- Deciso: la prima versione sugli store è GRATIS, senza pubblicità né acquisti. Tock Plus si aggiunge dopo.
+- Piano di Plus (proposto, da confermare con anteprime): acquisto unico 2,99 € (Android + iPhone), MAI vantaggi nel
+  gioco, solo cose estetiche: stili grafici nuovi (idee: "Marmo e oro", "Spiaggia", "Neon notturno"), pedine speciali
+  (metallizzate, a righe, con emoji al posto dei pallini), ⭐ accanto al nome + colore del nome, festa della vittoria a
+  scelta, reazioni extra, "Le mie statistiche". Da decidere: se i 5 stili attuali restano gratis (consigliato) o no.
+- Da sapere: Google/Apple trattengono il 15%; guadagnando si diventa "commerciante" UE (indirizzo visibile su Google
+  Play, dichiarazione dei redditi → consigliato commercialista); servono Google Play Billing e acquisti Apple nei gusci.
+- Pubblicità: eventualmente solo tra una partita e l'altra (richiede banner consenso GDPR); mai durante la partita.
+- Costi previsti: Google Play 25 $ una tantum, Apple 99 $/anno, GitHub privato / Cloudflare Pages / Codemagic gratis,
+  Firebase gratis fino a ~100 collegati insieme (poi piano Blaze, pochi euro).
+- Piano di pubblicazione deciso: repository TockV6 PRIVATO + sito su Cloudflare Pages (dominio tutto suo, così
+  assetlinks.json per Android va alla radice) + codice "rimescolato" nella versione pubblicata; app iPhone con un guscio
+  costruito da Codemagic (l'utente ha Windows, niente Mac); account Apple PERSONALE (venditore = nome vero).
+
 ## Store (v6)
 - Cartella `store/`: `GUIDA-PUBBLICAZIONE.md` (passi per Google Play con PWABuilder e per l'App Store),
   `scheda-store.md` (testi, risposte ai questionari), `banner-1024x500.png` (rigenerabile da `banner.html`),
