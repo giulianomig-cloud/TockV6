@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.03** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.04** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -54,6 +54,10 @@
   che viene riusata da zero.
 - Chi aspetta e chiude l'app viene tolto dal server (`onDisconnect` su `draft/players/<token>`); se la
   connessione torna si risiede da solo (`mmRejoin`). Nomi uguali diventano "Marco 2".
+- v6.04 (segnalato: chiudendo e riaprendo l'app la stessa persona occupava più posti, perché sull'iPhone la
+  connessione vecchia resta "appesa"): UN posto per telefono (`mmDeviceToken`, chiave `tock-mm-device`; chi rientra
+  torna sul proprio posto) + segno di vita ogni 15 s in `draft/seen/<token>` (`mmStartBeat`); chi tace da 45 s è un
+  fantasma e lo toglie chiunque passi (`mmPruneStale`, anche prima di completare coi computer).
 - Al 4° giocatore `mmAutoTeams` decide coppie e colori a caso e distribuisce NELLA STESSA transazione: niente
   schermate di estrazione, si va dritti al tabellone. "🤖 Normale / Difficile" completa i posti liberi col computer.
 - Schermata d'attesa `renderMatchWaiting` (radar col 🎲, 4 posti, tempo, "Annulla"). In home "▶︎ Torna alla partita

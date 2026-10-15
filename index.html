@@ -7300,7 +7300,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.03";
+const APP_VERSION = "v6.04";
 
 let myColor = null;
 let myRoomId = null;
@@ -8911,6 +8911,11 @@ const MM_BATCH = 6; // stanze lette insieme a ogni giro della ricerca
 const MM_MAX_ROOMS = 60;
 const MM_ABANDONED_MS = 10 * 60 * 1000; // partita ferma e senza nessuno collegato da 10 minuti
 const MM_LAST_KEY = "tock-last-match";
+// v6.04: chi aspetta dà un "segno di vita" ogni 15 s (draft/seen/<token>); chi
+// tace da più di 45 s è un posto fantasma (app chiusa ma connessione non ancora
+// caduta, tipico dell'iPhone) e viene tolto da chiunque passi dalla stanza.
+const MM_BEAT_MS = 15000;
+const MM_STALE_MS = 45000;
 
 function isMatchRoom(roomId) {
   return typeof roomId === "string" && roomId.indexOf(MM_PREFIX) === 0;
@@ -8918,8 +8923,31 @@ function isMatchRoom(roomId) {
 
 let mm = null; // { roomId, token, since, busy } mentre si cerca / si aspetta
 
+function mmIsStale(d, t) {
+  if (d.botTokens && d.botTokens[t]) return false;
+  const seen = d.seen && d.seen[t];
+  return !seen || serverNow() - seen > MM_STALE_MS;
+}
+// Posti davvero occupati (computer + persone che hanno dato segno di vita).
+function mmLiveTokens(d) {
+  if (!d || !d.players) return [];
+  const order = (d.order || []).filter((t) => d.players[t]);
+  Object.keys(d.players).forEach((t) => { if (!order.includes(t)) order.push(t); });
+  return order.filter((t) => !mmIsStale(d, t));
+}
+// Toglie i posti fantasma (mai il proprio).
+function mmPruneStale(d, keep) {
+  if (!d || !d.players || d.pairDraw) return;
+  Object.keys(d.players).forEach((t) => {
+    if (t === keep || !mmIsStale(d, t)) return;
+    delete d.players[t];
+    if (d.playerIds) delete d.playerIds[t];
+    if (d.seen) delete d.seen[t];
+    if (Array.isArray(d.order)) d.order = d.order.filter((x) => x !== t);
+  });
+}
 function mmDraftCount(st) {
-  return st && st.draft && st.draft.players ? Object.keys(st.draft.players).length : 0;
+  return st && st.draft ? mmLiveTokens(st.draft).length : 0;
 }
 function mmIsWaitingRoom(st) {
   return !!(st && st.roomMode === "draw" && st.phase === "lobby" && st.draft && !st.draft.pairDraw && mmDraftCount(st) < 4);
@@ -8951,6 +8979,9 @@ async function mmFindRoom() {
     const snaps = await Promise.all(ids.map((id) => roomRef(id).get()));
     const states = snaps.map((s) => (s.exists() ? normalizeState(s.val()) : null));
     // 1) c'è già qualcuno che aspetta? si va con chi è più vicino a 4
+    // 0) ci sono già io (rientro dopo aver chiuso l'app)? stessa stanza, stesso posto
+    const mine = states.findIndex((st) => st && st.roomMode === "draw" && st.phase === "lobby" && st.draft && !st.draft.pairDraw && st.draft.players && st.draft.players[mmDeviceToken()]);
+    if (mine >= 0) return { roomId: ids[mine], recycle: null };
     let best = -1;
     states.forEach((st, i) => {
       if (mmIsWaitingRoom(st) && mmDraftCount(st) > 0 && (best < 0 || mmDraftCount(st) > mmDraftCount(states[best]))) best = i;
@@ -8969,8 +9000,20 @@ async function mmFindRoom() {
   return null;
 }
 
+// v6.04: un solo "posto" per telefono (prima era nuovo a ogni ricerca, e chi
+// chiudeva e riapriva l'app si ritrovava seduto due volte).
+let _mmDevice = null;
+function mmDeviceToken() {
+  if (_mmDevice) return _mmDevice;
+  try { _mmDevice = localStorage.getItem("tock-mm-device"); } catch (e) {}
+  if (!_mmDevice) {
+    _mmDevice = "d" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem("tock-mm-device", _mmDevice); } catch (e) {}
+  }
+  return _mmDevice;
+}
 function mmFreshToken(roomId) {
-  const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const token = mmDeviceToken();
   try { localStorage.setItem("tock-roomtoken-" + roomId, token); } catch (e) {}
   return token;
 }
@@ -8997,6 +9040,9 @@ async function mmJoinRoom(roomId, recycle, token) {
         else if (!(st.draft && st.draft.players && st.draft.players[token]) && !mmIsWaitingRoom(st)) return undefined;
       }
       const d = st.draft;
+      mmPruneStale(d, token);
+      if (!d.seen) d.seen = {};
+      d.seen[token] = serverNow();
       if (!d.players[token]) d.order.push(token);
       d.players[token] = mmUniqueName(d.players, token, myName);
       if (!d.playerIds) d.playerIds = {};
@@ -9018,12 +9064,31 @@ function mmArmDisconnect(roomId, token) {
   const base = roomRef(roomId).child("draft");
   base.child("players/" + token).onDisconnect().remove().catch(() => {});
   base.child("playerIds/" + token).onDisconnect().remove().catch(() => {});
+  base.child("seen/" + token).onDisconnect().remove().catch(() => {});
 }
 function mmDisarmDisconnect(roomId, token) {
   if (!roomId || !token) return;
   const base = roomRef(roomId).child("draft");
   base.child("players/" + token).onDisconnect().cancel().catch(() => {});
   base.child("playerIds/" + token).onDisconnect().cancel().catch(() => {});
+  base.child("seen/" + token).onDisconnect().cancel().catch(() => {});
+}
+
+// Segno di vita mentre si aspetta (+ pulizia dei posti fantasma degli altri).
+let mmBeatTimer = null;
+function mmStartBeat() {
+  clearInterval(mmBeatTimer);
+  mmBeatTimer = setInterval(() => {
+    if (!mm || !mm.roomId) { clearInterval(mmBeatTimer); return; }
+    const tok = mm.token;
+    roomRef(mm.roomId).transaction((st) => {
+      if (!st || !st.draft || !st.draft.players || st.draft.pairDraw || !st.draft.players[tok]) return undefined;
+      if (!st.draft.seen) st.draft.seen = {};
+      st.draft.seen[tok] = serverNow();
+      mmPruneStale(st.draft, tok);
+      return st;
+    }).catch(() => {});
+  }, MM_BEAT_MS);
 }
 
 // Punto d'ingresso dal pulsante "Gioca subito".
@@ -9080,6 +9145,7 @@ function renderMatchNameScreen() {
 async function mmSearch() {
   if (mm && mm.busy) return;
   mm = { roomId: null, token: null, since: Date.now(), busy: true };
+  mmRenderKey = null;
   renderMatchWaiting(null);
   try {
     for (let attempt = 0; attempt < 6 && mm; attempt++) {
@@ -9096,6 +9162,7 @@ async function mmSearch() {
         myRoomId = found.roomId;
         myToken = token;
         mmArmDisconnect(found.roomId, token);
+        mmStartBeat();
         incrementStat("matchmaking");
         watchRoom(found.roomId, onDraftStateChange);
         return;
@@ -9137,11 +9204,13 @@ async function mmCancel() {
   mm = null;
   if (cur && cur.roomId) {
     roomRef(cur.roomId).off("value");
+    clearInterval(mmBeatTimer);
     mmDisarmDisconnect(cur.roomId, cur.token);
     await roomRef(cur.roomId).transaction((st) => {
       if (!st || !st.draft || !st.draft.players || st.draft.pairDraw) return undefined;
       delete st.draft.players[cur.token];
       if (st.draft.playerIds) delete st.draft.playerIds[cur.token];
+      if (st.draft.seen) delete st.draft.seen[cur.token];
       if (Array.isArray(st.draft.order)) st.draft.order = st.draft.order.filter((t) => t !== cur.token);
       // rimasti solo computer? si svuota la stanza, così è subito libera
       if (Object.keys(st.draft.players).every((t) => st.draft.botTokens && st.draft.botTokens[t])) return newGameState({}, "draw");
@@ -9162,6 +9231,7 @@ async function mmFillWithBots(level, btn) {
       const d = state.draft;
       if (!d || d.pairDraw) return;
       if (!d.botTokens) d.botTokens = {};
+      mmPruneStale(d, mm && mm.token);
       while (Object.keys(d.players).length < 4) {
         const token = "bot-" + Math.random().toString(36).slice(2, 8);
         d.players[token] = pickBotName(Object.values(d.players));
@@ -9193,11 +9263,18 @@ function mmElapsed() {
 }
 
 let mmTimer = null;
+let mmRenderKey = null;
 function renderMatchWaiting(state) {
   const root = $("#app");
   if (!root) return;
   const d = state && state.draft;
-  const tokens = d ? d.order.filter((t) => d.players[t]) : [];
+  const tokens = d ? mmLiveTokens(d) : [];
+  if (d && d.players[myToken] && !tokens.includes(myToken)) tokens.push(myToken);
+  // Ridisegna solo se cambia chi è seduto (il segno di vita ogni 15 s non deve
+  // far ripartire le animazioni).
+  const key = d ? tokens.map((t) => t + ":" + d.players[t]).join("|") : "searching";
+  if (key === mmRenderKey && root.querySelector(".mm-card")) return;
+  mmRenderKey = key;
   const n = tokens.length || (mm && mm.roomId ? 0 : 1);
   const slots = [];
   for (let i = 0; i < 4; i++) {
@@ -9435,6 +9512,8 @@ function onDraftStateChange(state) {
       mmRememberRoom(myRoomId);
       mm = null;
       clearInterval(mmTimer);
+      clearInterval(mmBeatTimer);
+      mmRenderKey = null;
     }
     // IMPORTANTE: costruisco la shell di gioco PRIMA di agganciare il
     // listener Firebase e prima di chiamare onStateChange a mano. Prima
