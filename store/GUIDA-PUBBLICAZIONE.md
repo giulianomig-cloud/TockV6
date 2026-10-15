@@ -29,7 +29,8 @@ Costo: **25 $ una volta sola**. Non serve un computer particolare.
 - **Package for stores → Android → Generate package**. Nelle opzioni:
   - Package ID: `com.mig.tock` (o simile, poi non si può più cambiare)
   - App name: `Tock` · Launcher name: `Tock`
-  - Version: `1` · Version name: `6.00`
+  - Version (codice interno): il numero del gioco tutto attaccato, es. v6.12 → `612`
+  - Version name: il numero del gioco senza "v", es. `6.12` (vedi "Numeri di versione" in fondo)
   - Signing key: **"Create new"** (PWABuilder crea la chiave di firma)
 - Scarichi uno ZIP. Dentro ci sono:
   - il file `.aab` da caricare su Google Play;
@@ -93,3 +94,17 @@ Se la rifiutano, si possono aggiungere funzioni da app vera (es. notifiche "tocc
 - `store/banner-1024x500.png`, `store/google-play/` e `store/apple/` — immagini per le schede (italiano e inglese)
   (`store/banner.html` serve solo a rigenerare il banner).
 - Chat "a frasi pronte" nelle partite con sconosciuti: è quello che chiedono gli store per le chat fra estranei.
+
+---
+
+## Numeri di versione
+
+| Cosa | Dove si vede | Esempio |
+|---|---|---|
+| Versione del gioco | in fondo alla home | v6.12 |
+| Versione store (Google "Version name", Apple "Version") | scheda dello store | 6.12 |
+| Codice interno (Google "Version code", Apple "Build") | solo nelle console | 612 |
+
+- La versione store è sempre il numero del gioco nel momento in cui si pubblica.
+- Il codice interno deve sempre salire (Tock Plus: v7.00 → 7.00 → 700).
+- Si ripubblica negli store solo se cambia la "scatola" (icona, nome, permessi): il gioco si aggiorna da solo dal sito.

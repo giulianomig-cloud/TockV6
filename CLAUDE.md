@@ -29,6 +29,14 @@
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
   - `APP_VERSION` in `index.html` (es. `"v5.30"`) — è il numero mostrato nella lobby;
   - `CACHE_VERSION` in `sw.js` (es. `"v5-30"`) — serve a scartare le cache vecchie sui telefoni.
+- Nomenclatura (decisa con l'utente):
+  - Gioco: `v6.xx`, sale di 1 a OGNI aggiornamento; il primo numero cambia solo per i grandi passi
+    (es. **v7.00** quando arriva Tock Plus).
+  - Store (Google Play e Apple): la versione è il numero del gioco nel momento in cui si pubblica, senza "v"
+    (es. gioco v6.12 → versione store **6.12**); il codice interno è lo stesso numero tutto attaccato
+    (Google "versionCode" / Apple "build" = **612**; per v7.00 = **700**). Deve sempre salire.
+  - Si ripubblica sugli store SOLO se cambia la "scatola" (icona, nome, permessi, guscio iPhone): il gioco si
+    aggiorna da solo dal sito.
 
 ## Regole da ricordare
 - Tutte le pedine (proprie, del compagno, avversarie) si mangiano con le stesse regole:
