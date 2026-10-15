@@ -3,7 +3,10 @@
 > Questo è il repository **TockV6** (versione per gli store, con "Gioca subito" e senza tornei).
 > È nato come copia di TockV5 alla v5.82 + v6.00. **TockV5 è un progetto separato** che continua per conto suo:
 > le modifiche fatte qui NON vanno portate in TockV5 e viceversa, salvo richiesta esplicita dell'utente.
-> I due progetti usano lo stesso database Firebase (stessa classifica e stessa rubrica dei nomi).
+> Dalla v6.01 la V6 ha un database Firebase TUTTO SUO (progetto `tock-v6`, Realtime Database in europe-west1):
+> classifica e rubrica dei nomi separate dalla V5. Le regole del database sono in `database.rules.json`
+> (vanno incollate a mano in console Firebase → Realtime Database → Regole → Pubblica).
+> Analytics NON è usato (niente measurementId nel codice: la pagina Privacy dice che non tracciamo).
 
 ## Lingua
 - Rispondi sempre in **italiano**, con spiegazioni semplici: l'utente non è un programmatore.
@@ -20,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.00** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.01** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
