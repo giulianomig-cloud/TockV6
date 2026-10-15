@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.10** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.11** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -237,6 +237,7 @@
   `cfKey` "tic" a ogni lettera, `cfWhoosh` fruscio che sale quando partono le caselle, `cfTick` 4 colpetti
   durante l'attesa, `cfSuccess` arpeggio a campanella Do-Mi-Sol-Do con i cerchi verdi, `fbOk` due note
   quando un pulsante diventa verde (anche "Siediti" riuscito), `fbFail` due note che scendono sul rosso.
+- Reazioni (v6.11): 😂 😱 👏 🎉 🙏 🔥. Il 🖕 è stato TOLTO (chiesto dall'utente): mai emoji offensive.
 - Reazioni in partita (v5.60): oltre all'emoji grande con il nome, ne salgono altre 7 più piccole che
   ondeggiano e svaniscono ("come i cuori nelle dirette", `reactionBurst`). Non per il 👋 della Sveglia.
 - Passaggi tra schermate (v5.61, scelta "A · Elemento che vola" fra A / B scorrimento laterale / C

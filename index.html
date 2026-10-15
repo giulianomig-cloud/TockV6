@@ -7953,7 +7953,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.10";
+const APP_VERSION = "v6.11";
 
 let myColor = null;
 let myRoomId = null;
@@ -15699,7 +15699,8 @@ function renderChatFab(messages) {
 // Reazioni rapide: sono normali messaggi di chat che contengono UNA sola
 // emoji (nessun campo nuovo nello stato -> nessun rischio con le regole
 // Firebase). Chi le riceve vede l'emoji "volare" sullo schermo.
-const REACTIONS = ["😂", "😱", "👏", "🖕", "🙏", "🔥"];
+// v6.11: tolto 🖕 (offensivo, non adatto agli store né agli sconosciuti di "Gioca subito"): al suo posto 🎉.
+const REACTIONS = ["😂", "😱", "👏", "🎉", "🙏", "🔥"];
 const reactionTracker = { roomId: null, lastId: null };
 const NUDGE_TEXT = "👋 Sveglia, tocca a te!";
 let lastNudgeAt = 0;
