@@ -1,4 +1,9 @@
-# Tock V5 — istruzioni per Claude
+# Tock V6 — istruzioni per Claude
+
+> Questo è il repository **TockV6** (versione per gli store, con "Gioca subito" e senza tornei).
+> È nato come copia di TockV5 alla v5.82 + v6.00. **TockV5 è un progetto separato** che continua per conto suo:
+> le modifiche fatte qui NON vanno portate in TockV5 e viceversa, salvo richiesta esplicita dell'utente.
+> I due progetti usano lo stesso database Firebase (stessa classifica e stessa rubrica dei nomi).
 
 ## Lingua
 - Rispondi sempre in **italiano**, con spiegazioni semplici: l'utente non è un programmatore.
