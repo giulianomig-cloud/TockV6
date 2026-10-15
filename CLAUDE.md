@@ -103,7 +103,8 @@
 ## Store (v6)
 - Cartella `store/`: `GUIDA-PUBBLICAZIONE.md` (passi per Google Play con PWABuilder e per l'App Store),
   `scheda-store.md` (testi, risposte ai questionari), `banner-1024x500.png` (rigenerabile da `banner.html`),
-  `screenshots/` (1080x1920).
+  `google-play/it|en/` (1080x1920) e `apple/it|en/` (1290x2796, iPhone 6,7"),
+  rifatte alla v6.09; banner rigenerabili da `banner.html` / `banner-en.html`.
 - `privacy.html` (linkata in fondo alla home): email di contatto miroga.dream@gmail.com (scelta dall'utente). È in APP_SHELL di `sw.js`.
 - Per togliere la barra del browser nell'app Android serve `/.well-known/assetlinks.json` alla RADICE del dominio
   (con GitHub Pages su `utente.github.io/TockV5` va in un repository `utente.github.io` + `.nojekyll`).
