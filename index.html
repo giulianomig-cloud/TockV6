@@ -163,6 +163,7 @@ button, input, select, textarea { font-family: inherit; }
     text-align: center; padding: 24px; background: var(--cream); color: var(--ink);
     font-weight: 800; font-size: 1.15rem; line-height: 1.4;
   }
+  html[lang="en"] body:has(.game-shell)::before { content: "📱 Turn your phone upright to play"; }
 }
 
 /* Su schermi più larghi del telefono (tablet in verticale, es. iPad) fa
@@ -977,6 +978,11 @@ body:has(#app > .lobby-card), .tut-overlay { background: var(--bx-bg); }
 .bx-friends .bx-play { box-shadow: none; background: var(--bx-bg); }
 .bx-home .bx-lb { grid-row: auto; }
 .home-meta .home-privacy { color: inherit; }
+.home-lang { all: unset; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; color: inherit; }
+.sx-lang { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sx-lang-btn { margin: 0; padding: 12px 8px; border-radius: 16px; border: none; background: var(--bx-card); color: var(--bx-ink); font-weight: 800; font-size: .95rem; box-shadow: var(--bx-shadow); cursor: pointer; }
+.sx-lang-btn.on { background: var(--bx-btn-bg); color: var(--bx-btn-ink); }
+html[lang="en"] .dealer-slot.dealer-winner::before { content: "👑 Dealer" !important; }
 /* Attesa di "Gioca subito" */
 .mm-hero { position: relative; overflow: hidden; border-radius: 28px; padding: 22px 16px 18px; background: var(--bx-hero); text-align: center; margin-top: 6px; }
 .mm-hero h1 { margin: 6px 0 0; font-size: 1.6rem; letter-spacing: -.02em; color: var(--bx-ink); }
@@ -5302,6 +5308,649 @@ if (typeof module !== "undefined") {
 </script>
 <script>
 // ============================================================
+// Lingua (v6.05): italiano / inglese.
+// Il codice dell'app resta scritto in italiano. In inglese le scritte vengono
+// tradotte mentre compaiono sullo schermo (I18N_EN = frasi esatte,
+// I18N_PATTERNS = frasi con dentro nomi o numeri), così non serve toccare ogni
+// punto del codice. Il registro delle mosse ha le sue regole (trLog).
+// Lingua: quella scelta a mano (tock-lang), altrimenti quella del telefono
+// (italiano solo se il telefono è in italiano).
+// ============================================================
+const LANG_KEY = "tock-lang";
+let LANG = (() => {
+  try {
+    const v = localStorage.getItem(LANG_KEY);
+    if (v === "it" || v === "en") return v;
+  } catch (e) {}
+  const n = (navigator.languages && navigator.languages[0]) || navigator.language || "it";
+  return /^it\b/i.test(n) ? "it" : "en";
+})();
+document.documentElement.lang = LANG;
+
+const IT_COLOR_EN = { Rosso: "Red", Verde: "Green", Giallo: "Yellow", Blu: "Blue" };
+function trColors(s) {
+  return String(s).replace(/\b(Rosso|Verde|Giallo|Blu)\b/g, (m) => IT_COLOR_EN[m]);
+}
+
+const I18N_EN = {
+  // --- Home ---
+  "Pronto per": "Ready for",
+  "una partita?": "a game?",
+  "Ti trovo altri giocatori in un attimo.": "I'll find other players in a moment.",
+  "🎲 Gioca subito": "🎲 Play now",
+  "Giochi come": "Playing as",
+  "cambia": "change",
+  "👥 Con gli amici": "👥 With friends",
+  "Scrivi un codice e fallo scrivere agli altri: se la stanza non esiste, la crei tu.": "Type a code and have your friends type it too: if the room doesn't exist, you create it.",
+  "Entra →": "Enter →",
+  "🏆 Classifica": "🏆 Leaderboard",
+  "Chi vince di più": "Who wins the most",
+  "🎓 Impara": "🎓 Learn",
+  "Ancora nessuna vittoria": "No wins yet",
+  "Tocca per vederla": "Tap to see it",
+  "Codice stanza": "Room code",
+  "Carico…": "Loading…",
+  "Privacy": "Privacy",
+  "Tocca qui e scrivi il codice": "Tap here and type the code",
+  "▶︎ Torna alla partita in corso": "▶︎ Back to your game",
+  "💡 Consiglio: tocca l'icona Condividi (il quadratino con la freccia in su) in Safari e scegli \"Aggiungi a Home\" per aprire il gioco a schermo intero come un'app.": "💡 Tip: tap the Share icon (the square with the up arrow) in Safari and choose \"Add to Home Screen\" to open the game full screen like an app.",
+  "💡 Consiglio: apri il menu ⋮ in alto a destra in Chrome e scegli \"Installa app\" (o \"Aggiungi a schermata Home\") per aprire il gioco a schermo intero come un'app.": "💡 Tip: open the ⋮ menu at the top right in Chrome and choose \"Install app\" (or \"Add to Home screen\") to open the game full screen like an app.",
+  "💡 Consiglio: usa la funzione \"Aggiungi a schermata Home\" del tuo browser per aprire il gioco a schermo intero come un'app.": "💡 Tip: use your browser's \"Add to Home screen\" option to open the game full screen like an app.",
+  "Prova il suono": "Test the sound",
+  "Passa al tema chiaro": "Switch to light theme",
+  "Passa al tema scuro": "Switch to dark theme",
+  "Passa all'aspetto classico": "Switch to the classic look",
+  "Attiva il rilievo 3D": "Turn on 3D relief",
+  "Rilievo 3D acceso/spento": "3D relief on/off",
+  "Riattiva audio": "Turn sound back on",
+  "Disattiva audio": "Mute sound",
+
+  // --- Classifica ---
+  "Carico la classifica…": "Loading the leaderboard…",
+  "Classifica generale": "Leaderboard",
+  "Torna alla home": "Back to home",
+  "🏆 Vittorie": "🏆 Wins",
+  "📊 Media": "📊 Win rate",
+  "Ancora nessuna partita contata: si riempie dalle prossime partite.": "No games counted yet: it fills up with the next games.",
+  "Vittorie totali per giocatore, in tutte le stanze.": "Total wins per player, in all rooms.",
+  "Ancora nessuna vittoria registrata.": "No wins recorded yet.",
+  "vittoria": "win",
+  "vittorie": "wins",
+
+  // --- Gioca subito ---
+  "Cerca giocatori": "Find players",
+  "🎲 Gioca subito ": "🎲 Play now ",
+  "Come ti chiami? Il nome lo vedono gli altri giocatori e serve per la classifica.": "What's your name? Other players will see it, and it's used for the leaderboard.",
+  "Il tuo nome": "Your name",
+  "il tuo nome": "your name",
+  "Scrivi il tuo nome.": "Type your name.",
+  "Un attimo…": "One moment…",
+  "Nessuna connessione": "No connection",
+  "Cerco giocatori…": "Looking for players…",
+  "Cerco una stanza…": "Looking for a room…",
+  "Si parte!": "Here we go!",
+  "Tu": "You",
+  "Libero": "Free",
+  "Non vuoi aspettare? I posti liberi li prende il computer:": "Don't want to wait? The computer takes the free seats:",
+  "🤖 Normale": "🤖 Normal",
+  "🤖 Difficile": "🤖 Hard",
+  "Tieni aperta l'app: appena siete in 4 squadre e colori si decidono a caso e la partita parte da sola.": "Keep the app open: as soon as there are 4 of you, teams and colors are drawn at random and the game starts by itself.",
+  "Annulla": "Cancel",
+  "Preparo il tavolo…": "Setting up the table…",
+  "Riprova": "Try again",
+  "Non riesco a cercare giocatori adesso: controlla la connessione e riprova.": "I can't look for players right now: check your connection and try again.",
+
+  // --- Stanza con codice ---
+  "Inserisci un codice stanza.": "Enter a room code.",
+  "Cerco la stanza…": "Looking for the room…",
+  "Non riesco a contattare il server, riprova.": "I can't reach the server, try again.",
+  "Non esiste ancora: la crei tu.": "It doesn't exist yet: you create it.",
+  "Stanza nuova": "New room",
+  "Stanza trovata": "Room found",
+  "Al momento è vuota.": "It's empty right now.",
+  "Nuova stanza": "New room",
+  "Sei il primo: scegli come formare le squadre.": "You're the first: choose how to form the teams.",
+  "🎨 Scelgo io i colori": "🎨 I pick the colors",
+  "Ogni giocatore entra e sceglie subito il proprio colore, come sempre.": "Each player comes in and picks their own color right away, as usual.",
+  "🎲 Estrazione a sorte": "🎲 Random draw",
+  "Si entra con solo il nome; quando siete in 4, coppie e colori si decidono a caso.": "You join with just your name; when there are 4 of you, teams and colors are drawn at random.",
+  "La modalità scelta vale per tutta la stanza: chi entra dopo la trova già impostata.": "The chosen mode applies to the whole room: whoever joins later finds it already set.",
+  "Cambia stanza": "Change room",
+  "Non riesco a creare la stanza, riprova.": "I can't create the room, try again.",
+  "🤖 Computer": "🤖 Computer",
+  "Sono io ›": "That's me ›",
+  "Partita già in corso": "Game already in progress",
+  "Stavi giocando da un altro telefono? Tocca il tuo nome per riprendere il tuo posto.": "Were you playing on another phone? Tap your name to take your seat back.",
+  "Non sei nella lista?": "Not on the list?",
+  "Entro come nuovo giocatore": "Join as a new player",
+  "Non trovo nessun giocatore con questo nome in questa stanza. Controlla di averlo scritto esattamente come la prima volta, oppure continua come nuovo giocatore.": "I can't find any player with this name in this room. Check you typed it exactly like the first time, or continue as a new player.",
+  "Invita amici": "Invite friends",
+  "Inserisci il tuo nome e scegli il tuo colore.": "Enter your name and choose your color.",
+  "Scegli il tuo colore": "Choose your color",
+  "Entra in partita": "Join the game",
+  "Entra nella stanza": "Enter the room",
+  "Scegli un colore per continuare.": "Choose a color to continue.",
+  "In scelta…": "Choosing…",
+  "Un altro giocatore lo sta scegliendo": "Another player is choosing it",
+  "🤖 Livello?": "🤖 Level?",
+  "Siediti": "Sit here",
+  "Libera": "Free",
+  "Normale": "Normal",
+  "Difficile": "Hard",
+  "Già preso": "Already taken",
+  "Scegli un colore.": "Choose a color.",
+  "Questo colore lo sta già scegliendo un altro giocatore. Scegline un altro.": "Another player is already choosing this color. Pick another one.",
+  "Non è stato possibile entrare nella stanza. Riprova.": "Couldn't enter the room. Try again.",
+  "Non è stato possibile entrare nella stanza (richiesta non completata). Riprova.": "Couldn't enter the room (request not completed). Try again.",
+  "questo colore è già stato preso": "this color is already taken",
+  "questa stanza non è in modalità estrazione": "this room isn't in random draw mode",
+  "la stanza è già piena (4 giocatori)": "the room is already full (4 players)",
+  "Qui non scegli il colore: scrivi il tuo nome. Quando siete in 4, coppie e colori si decidono a caso.": "Here you don't choose a color: type your name. When there are 4 of you, teams and colors are drawn at random.",
+  "Inserisci il tuo nome.": "Enter your name.",
+  "Questa stanza è già in modalità manuale — scegli il colore.": "This room is already in manual mode — choose your color.",
+  "Non è entrato: la stanza è già piena (4 giocatori).": "Couldn't join: the room is already full (4 players).",
+  "Non è entrato: richiesta non completata. Riprova.": "Couldn't join: request not completed. Try again.",
+  "Manca qualcuno? Fallo giocare al computer:": "Someone missing? Let the computer play:",
+  "🤖 Aggiungi normale": "🤖 Add normal",
+  "🤖 Aggiungi difficile": "🤖 Add hard",
+  "Rimuovi": "Remove",
+  "Appena arrivano tutti e 4, parte da sola l'estrazione delle coppie.": "As soon as all 4 arrive, the team draw starts by itself.",
+  "Estrazione delle coppie...": "Drawing the teams...",
+  "il tuo compagno": "your partner",
+  "colore già preso dal tuo compagno": "color already taken by your partner",
+  "Tu sei pronto! Avvio in corso...": "You're ready! Starting...",
+  "Anche gli altri sono pronti, avvio imminente...": "The others are ready too, starting soon...",
+  "In attesa dei giocatori": "Waiting for players",
+  "Aspetta gli amici o metti il computer sui posti liberi.": "Wait for your friends or put the computer in the free seats.",
+  "Inizia partita": "Start game",
+  "mancano giocatori": "players missing",
+  "Manca 1 giocatore": "1 player missing",
+  "Link copiato! Incollalo dove vuoi per invitare i tuoi amici.": "Link copied! Paste it anywhere to invite your friends.",
+  "Copia questo link per invitare i tuoi amici:": "Copy this link to invite your friends:",
+  "Link copiato": "Link copied",
+  "Bentornato": "Welcome back",
+
+  // --- Partita ---
+  "🏠 Tornare alla home?": "🏠 Back to home?",
+  "La partita continua per gli altri giocatori: potrai rientrare più tardi con lo stesso codice stanza.": "The game goes on for the other players: you can come back later with the same room code.",
+  "Resta": "Stay",
+  "Esci": "Leave",
+  "Registro mosse": "Move log",
+  "Mossa precedente": "Previous move",
+  "Mossa successiva": "Next move",
+  "Torna alla schermata iniziale": "Back to the home screen",
+  "🚪 Stanza": "🚪 Room",
+  "🤝 Squadra": "🤝 Team",
+  "⚠️ Connessione persa — provo a riconnettermi...": "⚠️ Connection lost — trying to reconnect...",
+  "🎴 Estrazione del mazziere": "🎴 Choosing the dealer",
+  "Si pesca a turno: chi trova l'Asso di Cuori dà le carte per primo.": "Everyone draws in turn: whoever finds the Ace of Hearts deals first.",
+  "Tutti pronti, avvio…": "Everyone's ready, starting…",
+  "✓ Scelta fatta": "✓ Card chosen",
+  "Mando la carta…": "Sending the card…",
+  "Dai una carta a …": "Give a card to …",
+  "Mazziere (Asso di Cuori)": "Dealer (Ace of Hearts)",
+  "▶ Tocca a te": "▶ Your turn",
+  "Aspetta, la mossa precedente è ancora in salvataggio...": "Wait, the previous move is still being saved...",
+  "sei offline: controlla la connessione e riprova.": "you're offline: check your connection and try again.",
+  "il server ha rifiutato la richiesta. Riprova, e se continua segnalalo.": "the server refused the request. Try again, and report it if it keeps happening.",
+  "non riesco a contattare il server. Controlla la connessione e riprova.": "I can't reach the server. Check your connection and try again.",
+  "errore sconosciuto. Riprova.": "unknown error. Try again.",
+  "errore sconosciuto": "unknown error",
+  "Nessuna mossa da rivedere ancora": "No moves to review yet",
+  "Sei già alla mossa più recente": "You're already at the latest move",
+  "Non ci sono altre mosse più indietro": "There are no earlier moves",
+  "Torna al live": "Back to live",
+  "Scegli la mossa": "Choose the move",
+  "Più pedine possono giocare questa carta.": "Several pawns can play this card.",
+  "entra in gioco": "enters play",
+  "entra in casa": "goes home",
+  "continua il giro": "keeps going around",
+  "Questa mossa mangia una tua pedina. Confermi?": "This move captures one of your own pawns. Confirm?",
+  "Scambia due pedine": "Swap two pawns",
+  "Tocca due pedine sul tabellone, oppure scegli qui sotto.": "Tap two pawns on the board, or choose below.",
+  "Scegli la prima": "Choose the first",
+  "Scegli la seconda": "Choose the second",
+  "Base → entra in gioco": "Base → enters play",
+  "In gioco → entra in casa": "In play → goes home",
+  "In gioco → prosegue": "In play → keeps going",
+  "Un passo in meno": "One step less",
+  "Un passo in più": "One step more",
+  "Distribuisci il 7": "Split the 7",
+  "Questa distribuzione non è valida (percorso bloccato o casella-casa occupata). Prova un'altra combinazione.": "This split isn't valid (path blocked or home square taken). Try another combination.",
+  "Questo 7 mangia una tua pedina. Confermi?": "This 7 captures one of your own pawns. Confirm?",
+  "Conferma": "Confirm",
+  "Apri la chat": "Open the chat",
+  "💬 Chat": "💬 Chat",
+  "Nessun messaggio ancora — tocca per scrivere": "No messages yet — tap to write",
+  "Chiudi le reazioni": "Close reactions",
+  "Reazioni": "Reactions",
+  "Sveglia chi deve giocare": "Wake up whoever's turn it is",
+  "✓ Sveglia inviata": "✓ Nudge sent",
+  "👋 Sveglia, tocca a te!": "👋 Wake up, it's your turn!",
+  "Ora non c'è nessuno da svegliare.": "There's nobody to wake up right now.",
+  "Tocca a te! 😄": "It's your turn! 😄",
+  "Gioca il computer, è già veloce.": "The computer is playing, it's already fast.",
+  "Hai appena svegliato: aspetta un po'.": "You just sent a nudge: wait a bit.",
+  "Invio…": "Sending…",
+  "Scrivi un messaggio...": "Write a message...",
+  "💬 Chat di stanza": "💬 Room chat",
+  "Invia": "Send",
+  "Chiudi": "Close",
+  "Mostra solo recenti": "Show recent only",
+  "Mostra tutto": "Show all",
+  "⬇ Scarica": "⬇ Download",
+  "1 pedina mangiata": "1 pawn captured",
+  "Vittima della serata": "Victim of the night",
+  "Partita pacifica": "Peaceful game",
+  "nessuna pedina mangiata": "no pawns captured",
+  "Re dei Jack": "King of Jacks",
+  "Partita finita": "Game over",
+  "🔁 Rivincita": "🔁 Rematch",
+  "Torna alla lobby": "Back to the lobby",
+  "Preparo la rivincita…": "Setting up the rematch…",
+  "Si riparte!": "Here we go again!",
+  "Il browser non supporta l'audio qui.": "The browser doesn't support audio here.",
+  "Ricarica": "Reload",
+  "Ignora": "Ignore",
+  "Avanti": "Next",
+  "base": "base",
+  " · tu": " · you",
+  "(vuota)": "(empty)",
+
+  // --- Impostazioni ---
+  "Impostazioni": "Settings",
+  "Tema": "Theme",
+  "🧊 Rilievo 3D": "🧊 3D relief",
+  "Stile grafico": "Graphic style",
+  "Classico": "Classic",
+  "Legno pregiato": "Fine wood",
+  "Notte da casinò": "Casino night",
+  "Moderno luminoso": "Bright modern",
+  "Arcade retro": "Retro arcade",
+  "Suoni": "Sounds",
+  "Effetti sonori": "Sound effects",
+  "Vibrazione (turno, pedina mangiata, casa)": "Vibration (turn, captured pawn, home)",
+  "Regole e partita": "Rules and game",
+  "📜 Regolamento": "📜 Rules",
+  "Regolamento": "Rules",
+  "Impara": "Learn",
+  "Condividi": "Share",
+  "Sviluppo": "Development",
+  "Mostra le mani (codice)": "Show the hands (code)",
+  "Versione": "Version",
+  "Codice per il pannello debug:": "Code for the debug panel:",
+  "Codice errato.": "Wrong code.",
+  "Nascondi mani (debug)": "Hide hands (debug)",
+  "Mostra mani (debug)": "Show hands (debug)",
+  "🃏 Mani (debug, solo qui)": "🃏 Hands (debug, only here)",
+  "🌍 Lingua": "🌍 Language",
+
+  // --- Regolamento ---
+  "Obiettivo": "Goal",
+  "Si gioca in quattro, a coppie: Rosso + Giallo contro Verde + Blu. Vince la coppia che per prima porta tutte e 8 le pedine (le 4 di ciascun compagno) nelle proprie caselle-casa.": "Four people play in pairs: Red + Yellow against Green + Blue. The first pair to bring all 8 pawns (each partner's 4) into their home squares wins.",
+  "Le carte e lo scambio": "The cards and the exchange",
+  "Si usa un mazzo francese da 52 carte. Ogni giocatore riceve 5 carte nella prima mano di ogni giro di mazzo, poi 4. Quando il mazzo finisce si rimescola e il mazziere passa a chi è alla sua sinistra.\nPrima di giocare ogni giocatore sceglie alla cieca una carta da dare al compagno. Nessuno vede cosa riceve finché tutti e quattro non hanno scelto.": "A standard 52-card deck is used. Each player gets 5 cards in the first hand of each pass through the deck, then 4. When the deck runs out it is reshuffled and the deal passes to the player on the dealer's left.\nBefore playing, each player blindly picks one card to give to their partner. Nobody sees what they receive until all four have chosen.",
+  "Il turno": "The turn",
+  "Si gioca in senso orario. Ogni turno si gioca una sola carta. Il mazziere gioca per ultimo e comincia chi lo segue. Le carte nuove si danno solo quando tutti hanno finito la mano.": "Play goes clockwise. Each turn you play exactly one card. The dealer plays last and the player after the dealer starts. New cards are dealt only when everyone has finished the hand.",
+  "Cosa fa ogni carta": "What each card does",
+  "• Asso e Re: fanno entrare una pedina in gioco. Se hai già tutte le pedine in gioco, l'Asso vale 1 e il Re vale 13.\n• Regina: 12 caselle avanti.\n• 2, 3, 5, 6, 8, 9, 10: avanti del numero indicato.\n• 4: quattro caselle indietro. Una pedina ferma sulla base che gioca il 4 arriva diretta sulla propria casella \"-4\", senza fare il giro.\n• 7: si gioca intero su una pedina oppure si divide tra le tue pedine in gioco. Con il 7 non sei bloccato: mangi ogni pedina che incontri lungo il percorso. Se una parte del 7 manda in casa tutte le tue pedine, i passi rimasti continuano sulle pedine del compagno.\n• Jack: scambia di posto due pedine qualsiasi sul percorso, anche tue, del compagno o avversarie. Non vale per le pedine già in casa né per quella appena entrata e ancora ferma sulla base. Serve almeno una tua pedina sul percorso e due pedine in totale.": "• Ace and King: bring a pawn into play. If all your pawns are already in play, the Ace is worth 1 and the King 13.\n• Queen: 12 squares forward.\n• 2, 3, 5, 6, 8, 9, 10: forward by the number shown.\n• 4: four squares backwards. A pawn sitting on its base that plays the 4 goes straight to its own \"-4\" square, without going around.\n• 7: play it all on one pawn or split it among your pawns in play. With the 7 you're never blocked: you capture every pawn you meet along the way. If part of the 7 brings all your pawns home, the remaining steps continue on your partner's pawns.\n• Jack: swaps any two pawns on the track, yours, your partner's or the opponents'. It doesn't work on pawns already home or on a pawn that just entered and is still on its base. You need at least one of your pawns on the track and two pawns in total.",
+  "Entrare e mangiare": "Entering and capturing",
+  "• Una pedina appena entrata è protetta sulla base e non si può mangiare finché non si muove. Se hai già una tua pedina sulla base e giochi un altro Asso o Re, la nuova entra e mangia quella.\n• Ti muovi del valore esatto della carta. Non puoi passare sopra un'altra pedina, di nessun colore: se la strada è occupata la mossa non si può fare, a meno che il numero esatto non ti faccia atterrare sopra la pedina.\n• Se atterri su una pedina la mangi sempre, anche quella del compagno o una tua. La pedina mangiata torna alla base e rientra con un Asso o un Re.": "• A pawn that just entered is protected on its base and can't be captured until it moves. If you already have a pawn on your base and play another Ace or King, the new one enters and captures it.\n• You move by the exact value of the card. You can't jump over another pawn of any color: if the way is blocked the move can't be made, unless the exact number makes you land on that pawn.\n• If you land on a pawn you always capture it, even your partner's or your own. The captured pawn goes back to its base and comes back in with an Ace or a King.",
+  "Le caselle-casa": "The home squares",
+  "Sono sicure e private: solo le tue pedine possono entrarci, e nessuno le può mangiare. Per entrare serve il numero esatto, ma è sempre facoltativo: puoi decidere di continuare a girare. Una sola carta può chiudere il giro ed entrare in casa nello stesso movimento. Se una casella-casa è occupata non puoi superarla, quindi il 7 serve spesso a sbloccare la situazione.": "They are safe and private: only your pawns can go in, and nobody can capture them. You need the exact number to enter, but it's always optional: you can choose to keep going around. A single card can finish the lap and enter home in the same move. If a home square is taken you can't pass it, so the 7 is often what unblocks the situation.",
+  "Bruciare una carta": "Burning a card",
+  "Scegli tu quale carta giocare. Se la carta che giochi non ha nessuna mossa legale, viene bruciata e il turno passa. Non sei obbligato a giocare una carta che ha mosse, e non puoi bruciare una carta che ne ha.": "You choose which card to play. If the card you play has no legal move, it is burned and the turn passes. You're not forced to play a card that has moves, and you can't burn a card that has one.",
+  "Quando hai finito": "When you're done",
+  "Se tutte le tue 4 pedine sono in casa, continui a giocare le tue carte muovendo le pedine del compagno.": "If all 4 of your pawns are home, you keep playing your cards by moving your partner's pawns.",
+
+  // --- Impara a giocare ---
+  "🎓 Impara a giocare": "🎓 Learn to play",
+  "Lezioni brevi sul vero tabellone, nell'ordine che preferisci.": "Short lessons on the real board, in any order you like.",
+  "Hai completato tutto! 🎉": "You've completed everything! 🎉",
+  "Il tuo percorso": "Your progress",
+  "Inizia ›": "Start ›",
+  "Elenco lezioni": "Lesson list",
+  "↺ Ricomincia": "↺ Restart",
+  "Fine ✓": "Done ✓",
+  "Prossima ›": "Next ›",
+  "Per questa lezione usa la carta evidenziata.": "For this lesson use the highlighted card.",
+  "Scegli come giocarla:": "Choose how to play it:",
+  "Prova un'altra scelta.": "Try another choice.",
+  "Il tuo compagno": "Your partner",
+  "Obiettivo e coppie": "Goal and teams",
+  "Chi gioca con chi e come si vince": "Who plays with whom and how to win",
+  "Si gioca in quattro, a coppie: Rosso + Giallo contro Verde + Blu. Tu sei il Rosso e il tuo compagno è il Giallo.\n\nVince la coppia che per prima porta tutte e 8 le pedine (le 4 tue e le 4 del compagno) nelle caselle-casa, al centro: nell'immagine ne vedi già alcune arrivate.": "Four people play in pairs: Red + Yellow against Green + Blue. You are Red and your partner is Yellow.\n\nThe first pair to bring all 8 pawns (your 4 and your partner's 4) into the home squares in the middle wins: in the picture you can already see some that made it.",
+  "Ottimo. Passa alla lezione che vuoi: puoi farle in qualsiasi ordine.": "Great. Go to whichever lesson you like: you can do them in any order.",
+  "Far uscire una pedina": "Bringing a pawn out",
+  "Asso e Re portano una pedina in gioco": "Ace and King bring a pawn into play",
+  "Tutte le tue pedine sono ancora in base. Solo un Asso o un Re ne fa uscire una.\n\nTocca l'Asso.": "All your pawns are still in the base. Only an Ace or a King brings one out.\n\nTap the Ace.",
+  "Il 5 muove una pedina già in gioco, e tu non ne hai ancora. Serve l'Asso.": "The 5 moves a pawn already in play, and you don't have one yet. You need the Ace.",
+  "Fatto! La pedina è sulla tua base ed è protetta: nessuno la può mangiare finché non si muove. Se hai già una pedina sulla base e giochi un altro Asso o Re, la nuova entra e mangia quella.": "Done! The pawn is on your base and it's protected: nobody can capture it until it moves. If you already have a pawn on the base and play another Ace or King, the new one enters and captures it.",
+  "Muovere e mangiare": "Moving and capturing",
+  "Atterrare esatti su una pedina": "Landing exactly on a pawn",
+  "Ti muovi del valore esatto della carta. La pedina verde è a 5 caselle dalla tua.\n\nTocca il 5: ci atterri sopra e la mangi.": "You move by the exact value of the card. The green pawn is 5 squares from yours.\n\nTap the 5: you land on it and capture it.",
+  "Il 9 è una mossa valida, ma ti porta oltre la pedina verde. Prova con il 5.": "The 9 is a valid move, but it takes you past the green pawn. Try the 5.",
+  "Mangiata! Torna alla sua base e dovrà aspettare un Asso o un Re. Si mangia sempre, anche i compagni e le tue pedine (qui non ti fa guadagnare nulla, quindi attenzione).": "Captured! It goes back to its base and will have to wait for an Ace or a King. You always capture, even your partner's and your own pawns (that gains you nothing, so be careful).",
+  "Il 4 va indietro": "The 4 goes backwards",
+  "La scorciatoia verso casa": "The shortcut home",
+  "Il 4 è l'unica carta che va indietro. Dalla base, 4 passi indietro ti portano sulla casella \"-4\", a un passo dall'entrata in casa: una scorciatoia che evita il giro intero.\n\nTocca il 4.": "The 4 is the only card that goes backwards. From the base, 4 steps back take you to the \"-4\" square, one step from the home entrance: a shortcut that skips the whole lap.\n\nTap the 4.",
+  "L'8 ti manderebbe avanti per tutto il giro. Per la scorciatoia serve il 4.": "The 8 would send you forward around the whole lap. For the shortcut you need the 4.",
+  "Sei sulla \"-4\". Da qui con il numero giusto entri nelle caselle-casa. Nella prossima lezione lo vedi.": "You're on the \"-4\". From here, with the right number you go into the home squares. You'll see it in the next lesson.",
+  "Entrare in casa": "Going home",
+  "Il numero esatto, sempre facoltativo": "The exact number, always optional",
+  "La tua pedina ha fatto il giro ed è sulla \"-4\". Con il 6 puoi entrare in casa, nella seconda casella. Le caselle-casa sono sicure: nessuno le può mangiare.\n\nTocca il 6 e scegli. Entrare è sempre facoltativo.": "Your pawn went around and is on the \"-4\". With the 6 you can go home, into the second square. Home squares are safe: nobody can capture there.\n\nTap the 6 and choose. Going home is always optional.",
+  "Con il 2 non arrivi in casa. Prova con il 6.": "With the 2 you don't reach home. Try the 6.",
+  "Entra in casa": "Go home",
+  "la pedina è al sicuro per sempre": "the pawn is safe forever",
+  "Continua a girare": "Keep going around",
+  "resti sul percorso, anche se potresti entrare": "you stay on the track, even though you could go home",
+  "Dentro! Da qui la pedina non si muove più e nessuno la può mangiare. Per vincere servono tutte e 8.": "In! From here the pawn doesn't move anymore and nobody can capture it. You need all 8 to win.",
+  "Hai scelto di continuare a girare: va bene, entrare in casa è sempre facoltativo. Potresti farlo per mangiare qualcuno più avanti.": "You chose to keep going around: that's fine, going home is always optional. You might do it to capture someone further ahead.",
+  "Il 7 diviso": "The split 7",
+  "Più mangiate con una carta sola": "Several captures with one card",
+  "Il 7 si può giocare intero su una pedina, oppure dividere tra le tue pedine. Con il 7 non sei bloccato: mangi ogni pedina che incontri sul percorso.\n\nHai due pedine verdi davanti: una a 3 caselle dalla tua prima pedina, una a 4 dalla seconda. Tocca il 7 e scegli come giocarlo.": "The 7 can be played all on one pawn, or split among your pawns. With the 7 you're never blocked: you capture every pawn you meet along the way.\n\nThere are two green pawns ahead: one 3 squares from your first pawn, one 4 from the second. Tap the 7 and choose how to play it.",
+  "Il 3 mangerebbe una sola pedina. Prova con il 7.": "The 3 would capture just one pawn. Try the 7.",
+  "Tutto sulla prima pedina (7)": "All on the first pawn (7)",
+  "mangia una sola pedina verde": "captures just one green pawn",
+  "Funziona, ma mangi una sola pedina. Prova a dividere il 7: 3 + 4.": "It works, but you capture just one pawn. Try splitting the 7: 3 + 4.",
+  "Dividi: 3 sulla prima, 4 sulla seconda": "Split: 3 on the first, 4 on the second",
+  "mangia due pedine verdi": "captures two green pawns",
+  "Tutto sulla seconda pedina (7)": "All on the second pawn (7)",
+  "Due mangiate con una carta sola! Il 7 è la carta più potente: serve anche a sbloccare una casella-casa occupata e a far continuare i passi rimasti sulle pedine del compagno.": "Two captures with a single card! The 7 is the most powerful card: it also unblocks a taken home square and lets the remaining steps continue on your partner's pawns.",
+  "Il Jack": "The Jack",
+  "Scambiare due pedine di posto": "Swapping two pawns",
+  "Il Jack non muove: scambia di posto due pedine qualsiasi sul percorso, anche avversarie. Non vale per le pedine in casa né per quella appena entrata dalla base.\n\nLa tua pedina è appena partita; la pedina verde è quasi arrivata all'entrata della tua casa. Tocca il Jack e scegli lo scambio più utile.": "The Jack doesn't move: it swaps any two pawns on the track, opponents' too. It doesn't work on pawns at home or on one that just entered from the base.\n\nYour pawn has just started; the green pawn is almost at your home entrance. Tap the Jack and choose the most useful swap.",
+  "Il 2 è una mossa normale. Per questa lezione prova il Jack.": "The 2 is a normal move. For this lesson try the Jack.",
+  "La tua pedina ↔ la verde": "Your pawn ↔ the green one",
+  "arrivi quasi a casa, il verde riparte da capo": "you get almost home, green starts over",
+  "La verde ↔ la gialla (del tuo compagno)": "The green one ↔ the yellow one (your partner's)",
+  "non cambia nulla per te": "nothing changes for you",
+  "Si può fare, ma non ti aiuta: scegli lo scambio che avvicina la tua pedina a casa.": "You can do it, but it doesn't help you: choose the swap that brings your pawn closer to home.",
+  "La tua pedina ↔ quella gialla (compagno)": "Your pawn ↔ the yellow one (partner)",
+  "non è un buon affare": "not a good deal",
+  "Si può fare, ma lo scambio più utile è con la pedina verde, che è molto più avanti.": "You can do it, but the most useful swap is with the green pawn, which is much further ahead.",
+  "Scambio fatto: la tua pedina ha saltato quasi tutto il giro. Il Jack è la carta più strategica: usalo anche per mandare indietro un avversario.": "Swap done: your pawn skipped almost the whole lap. The Jack is the most strategic card: also use it to send an opponent back.",
+  "Quando una carta non ha mosse": "When a card has no moves",
+  "La Regina farebbe 12 passi, ma sul percorso c'è la pedina verde e non puoi passarci sopra: questa carta non ha nessuna mossa legale.\n\nScegli tu quale carta giocare. Tocca la Regina: la bruci e il turno passa.": "The Queen would make 12 steps, but the green pawn is in the way and you can't jump over it: this card has no legal move.\n\nYou choose which card to play. Tap the Queen: you burn it and the turn passes.",
+  "Il 2 si può giocare, ma qui vogliamo vedere come si brucia: tocca la Regina.": "The 2 can be played, but here we want to see how burning works: tap the Queen.",
+  "Bruciata. Ricorda: puoi bruciare solo una carta che non ha nessuna mossa legale. Se ne ha, la devi giocare, oppure scegliere un'altra carta.": "Burned. Remember: you can only burn a card that has no legal move. If it has one, you must play it, or choose another card.",
+  "Lo scambio con il compagno": "The exchange with your partner",
+  "Passargli una carta alla cieca": "Passing a card blindly",
+  "All'inizio di ogni mano scegli alla cieca una carta da dare al compagno, e ne ricevi una da lui.\n\nTocca la carta che daresti al tuo compagno.": "At the start of each hand you blindly pick a card to give to your partner, and you receive one from them.\n\nTap the card you'd give your partner.",
+  "Consiglio: dai al compagno le carte che a lui servono più che a te. Un Asso o un Re se ha pedine ancora in base, un Jack o un 7 se tu non hai modo di usarli.": "Tip: give your partner the cards they need more than you do. An Ace or a King if they still have pawns in the base, a Jack or a 7 if you have no way to use them.",
+
+  // --- Chat: frasi pronte e frasi dei computer ---
+  "Ciao a tutti! 👋": "Hi everyone! 👋",
+  "Bella mossa! 👏": "Nice move! 👏",
+  "Scusa socio 😅": "Sorry partner 😅",
+  "Forza squadra! 💪": "Go team! 💪",
+  "Che fortuna! 🍀": "So lucky! 🍀",
+  "Uff… 😩": "Ugh… 😩",
+  "Ben giocato! 🤝": "Well played! 🤝",
+  "Grazie! 🙏": "Thanks! 🙏",
+  "Ops, si torna alla base! 😄": "Oops, back to base! 😄",
+  "Presa! Scusa eh 😅": "Got you! Sorry 😅",
+  "Non dovevi restare lì fermo.": "You shouldn't have stayed there.",
+  "Mangiata! Avanti il prossimo.": "Captured! Next one.",
+  "Capita anche ai migliori 😉": "It happens to the best 😉",
+  "Una pedina a casa, le altre arrivano!": "One pawn home, the others are coming!",
+  "Prima al sicuro 🏠": "First one safe 🏠",
+  "Casa dolce casa.": "Home sweet home.",
+  "Bella partita, complimenti! 🏆": "Great game, congratulations! 🏆",
+  "Vittoria di squadra! 🎉": "Team victory! 🎉",
+  "GG a tutti, giocata bene!": "GG everyone, well played!",
+  "Bella partita comunque, ci riproviamo!": "Good game anyway, let's try again!",
+  "Complimenti, ben giocato da parte vostra!": "Congratulations, well played on your side!",
+  "GG, alla prossima va meglio.": "GG, next time will go better.",
+  "Ciao! 👋": "Hi! 👋",
+  "Salve salve 🙂": "Hello hello 🙂",
+  "Ehi, ciao a tutti!": "Hey, hi everyone!",
+  "Grazie, troppo gentile! 😄": "Thanks, too kind! 😄",
+  "Eheh, fortuna del principiante.": "Heh, beginner's luck.",
+  "Grazie mille!": "Thanks a lot!",
+  "Ci può stare, capita 🙂": "Fair enough, it happens 🙂",
+  "Pazienza, la prossima va meglio.": "Never mind, next one will go better.",
+  "Dai, si recupera!": "Come on, we can catch up!",
+  "Sì dai, forza! 💪": "Yes, come on! 💪",
+  "Andiamo, si può fare!": "Let's go, we can do it!",
+  "Diamoci dentro!": "Let's give it our all!",
+  "Prego! 🙂": "You're welcome! 🙂",
+  "Figurati!": "No problem!",
+  "Di nulla!": "Anytime!",
+
+  // --- Colori e squadre ---
+  "Rosso": "Red",
+  "Verde": "Green",
+  "Giallo": "Yellow",
+  "Blu": "Blue",
+  "Rosso + Giallo": "Red + Yellow",
+  "Verde + Blu": "Green + Blue",
+  "Squadra": "Team",
+  "Stanza": "Room",
+  "Partita": "Game",
+
+  // --- Avvisi di versione ---
+  "Tock — gioco da tavolo a coppie": "Tock — team board game",
+  "Oops!": "Oops!",
+};
+
+// Frasi con dentro nomi, numeri o colori. Ogni voce: [espressione, sostituzione].
+const I18N_PATTERNS = [
+  [/^Siete in (\d+) su 4 ·$/, "You're $1 of 4 ·"],
+  [/^Turno di (.+)$/, (m, a) => trColors(a) + "'s turn"],
+  [/^▶ Muovi (.+)$/, (m, a) => "▶ Move " + trColors(a)],
+  [/^(.+) ha (bruciato|giocato): (.+)$/, (m, a, v, c) => trColors(a) + (v === "bruciato" ? " burned: " : " played: ") + c],
+  [/^🎉 (.+) dà le carte per primo!$/, "🎉 $1 deals first!"],
+  [/^Squadra ([12]) · (.+)$/, (m, n, t) => "Team " + n + " · " + trColors(t)],
+  [/^(.+) · squadra (.+)$/, (m, a, t) => trColors(a) + " · team " + trColors(t)],
+  [/^(Rosso|Verde|Giallo|Blu|Red|Green|Yellow|Blue) · tu$/, (m, a) => trColors(a) + " · you"],
+  [/^(Rosso|Verde|Giallo|Blu|Red|Green|Yellow|Blue) · (.+)$/, (m, a, n) => trColors(a) + " · " + n],
+  [/^Computer al posto (.+)$/, (m, a) => "Computer as " + trColors(a)],
+  [/^(.+) lo ha appena scelto un altro giocatore\. Scegli un altro colore\.$/, (m, a) => "Another player just picked " + trColors(a) + ". Choose another color."],
+  [/^Il colore (.+) è già stato scelto da (.+) in questa stanza\. Scegline un altro, oppure rientra usando esattamente lo stesso nome per riprenderlo\.$/, (m, a, b) => "The color " + trColors(a) + " was already picked by " + b + " in this room. Choose another one, or come back in with exactly the same name to take it back."],
+  [/^Il nome "(.+)" è già usato da un altro giocatore in questa stanza\. Scegline uno diverso \(es\. aggiungi un'iniziale\)\.$/, "The name \"$1\" is already used by another player in this room. Choose a different one (e.g. add an initial)."],
+  [/^"(.+)" è già stato usato da un altro giocatore in questa stanza\. Scegli un nome diverso \(es\. aggiungi un'iniziale\)\.$/, "\"$1\" is already used by another player in this room. Choose a different name (e.g. add an initial)."],
+  [/^(\d+) giocator[ei] al tavolo\.$/, (m, n) => n + (n === "1" ? " player" : " players") + " at the table."],
+  [/^Stanza (\S+) — in attesa dei giocatori \((\d)\/4\)\.$/, "Room $1 — waiting for players ($2/4)."],
+  [/^in attesa del (\d)° giocatore\.\.\.$/, "waiting for player $1..."],
+  [/^La tua squadra: tu \+ (.+)\. Scegliete l'accoppiata di colori \(chi clicca per primo se la aggiudica\)\.$/, "Your team: you + $1. Choose your pair of colors (whoever taps first gets it)."],
+  [/^La tua squadra ha preso (.+)\. Tu quale vuoi\?$/, (m, a) => "Your team got " + trColors(a) + ". Which one do you want?"],
+  [/^In attesa che scelga il colore: (.+)\.$/, "Waiting for a color choice from: $1."],
+  [/^(.+) non è connesso in questo momento$/, (m, a) => trColors(a) + " isn't connected right now"],
+  [/^(.+) non connesso$/, (m, a) => trColors(a) + " not connected"],
+  [/^Mazziere · mani rimaste prima del rimescolamento: (\d+)$/, "Dealer · hands left before reshuffling: $1"],
+  [/^(\d+) pedine non ancora in gioco$/, "$1 pawns not in play yet"],
+  [/^(.+) gioca il 7$/, (m, a) => trColors(a) + " plays the 7"],
+  [/^(.+) viene mangiato$/, (m, a) => trColors(a) + " gets captured"],
+  [/^(.+) entra in casa$/, (m, a) => trColors(a) + " goes home"],
+  [/^(.+) muove$/, (m, a) => trColors(a) + " moves"],
+  [/^(.+) e (.+) si scambiano \(Jack\)$/, (m, a, b) => trColors(a) + " and " + trColors(b) + " swap (Jack)"],
+  [/^(.+) mangia (.+)$/, (m, a, b) => trColors(a) + " captures " + trColors(b)],
+  [/^⏪ (\d+)\/(\d+) · (.*)$/, (m, k, n, rest) => "⏪ " + k + "/" + n + " · " + tr(rest)],
+  [/^Le tue pedine sono tutte in casa: continua con quelle di (.+)$/, (m, a) => "Your pawns are all home: continue with " + trColors(a) + "'s"],
+  [/^In casa \((\d)ª casella\) → prosegue$/, "Home (square $1) → keeps going"],
+  [/^📜 Registro \((\d+) mosse\)$/, "📜 Log ($1 moves)"],
+  [/^(\d+) pedine mangiate$/, "$1 pawns captured"],
+  [/^(.+) portano tutte le pedine a casa$/, "$1 bring all their pawns home"],
+  [/^In questa stanza: (.+) (\d+) — (\d+) (.+)$/, (m, a, x, y, b) => "In this room: " + trColors(a) + " " + x + " — " + y + " " + trColors(b)],
+  [/^(.+) vincono!$/, (m, a) => trColors(a) + " win!"],
+  [/^Un altro giocatore usa una versione più nuova \((.+)\)\. Ricarica per giocare con le stesse regole\.$/, "Another player is using a newer version ($1). Reload to play with the same rules."],
+  [/^È disponibile una nuova versione \((.+)\)\. Ricaricala quando fa comodo\.$/, "A new version is available ($1). Reload when convenient."],
+  [/^Percentuale di partite vinte\. In classifica chi ha giocato almeno (\d+) partite \(contano quelle giocate da quando esiste questa classifica\)\.$/, "Share of games won. Ranked: players with at least $1 games (counting games played since this leaderboard exists)."],
+  [/^Nessuno ha ancora giocato (\d+) partite\.$/, "Nobody has played $1 games yet."],
+  [/^Poche partite \(meno di (\d+)\)$/, "Few games (less than $1)"],
+  [/^Sveglia inviata a (.+)$/, "Nudge sent to $1"],
+  [/^✓ Sveglia inviata a (.+)$/, "✓ Nudge sent to $1"],
+  [/^✓ Carta data a (.*)$/, "✓ Card given to $1"],
+  [/^🤝 Dai una carta a (.*)$/, "🤝 Give a card to $1"],
+  [/^Carta data a (.*)$/, "Card given to $1"],
+  [/^Dai una carta a (.*)$/, "Give a card to $1"],
+  [/^(.+) sta scegliendo$/, "$1 is choosing"],
+  [/^sta scegliendo$/, "is choosing"],
+  [/^(.+) ti sveglia: tocca a te!$/, "$1 is nudging you: it's your turn!"],
+  [/^Mancano (\d+) giocatori$/, "$1 players missing"],
+  [/^Restano (\d+)$/, "$1 left"],
+  [/^Conferma \(mancano (\d+) passi\)$/, "Confirm ($1 steps left)"],
+  [/^Pedina #(\d)$/, "Pawn #$1"],
+  [/^(\d+) di (\d+) lezioni$/, "$1 of $2 lessons"],
+  [/^"(.+)" non ha mosse legali ora: la bruci e passi il turno\?$/, "\"$1\" has no legal moves now: burn it and pass the turn?"],
+  [/^La stanza (\S+) è già stata creata( \(partita già finita\))?\. (Dentro ci sono: (.+)\.|Al momento è vuota\.)\n\nVuoi entrare\?$/, (m, code, fin, x, who) => "Room " + code + " already exists" + (fin ? " (game already over)" : "") + ". " + (who ? "Inside: " + who + "." : "It's empty right now.") + "\n\nDo you want to enter?"],
+  [/^Vieni a giocare a Tock con me! Stanza (\S+): (.+)$/, "Come play Tock with me! Room $1: $2"],
+  [/^Non riesco a caricare la classifica \((.*)\)\. Riprova\.$/, "I can't load the leaderboard ($1). Try again."],
+  [/^Non riesco ad aggiungere il computer: (.*)$/, (m, e) => "I can't add the computer: " + tr(e)],
+  [/^Non riesco ad assegnare il computer: (.*)$/, (m, e) => "I can't assign the computer: " + tr(e)],
+  [/^Non riesco a togliere il computer: (.*)$/, (m, e) => "I can't remove the computer: " + tr(e)],
+  [/^Non sono riuscito a farti rientrare: (.*)$/, (m, e) => "I couldn't get you back in: " + tr(e)],
+  [/^Non sono riuscito a salvare la mossa: (.*)$/, (m, e) => "I couldn't save the move: " + tr(e)],
+  [/^Errore nello scambio: (.*)$/, (m, e) => "Exchange error: " + tr(e)],
+  [/^Non è entrato: (.*)$/, (m, e) => "Couldn't join: " + tr(e)],
+  [/^Non è partita: (.*)$/, (m, e) => "Didn't start: " + tr(e)],
+  [/^🔴 Tocca a te! — Tock$/, "🔴 Your turn! — Tock"],
+  [/^Reazione (.+)$/, "Reaction $1"],
+  [/^(☀️|🌙) Tema$/, "$1 Theme"],
+  [/^Versione (\S+)$/, "Version $1"],
+];
+
+function tr(s) {
+  if (LANG !== "en" || typeof s !== "string") return s;
+  const m = s.match(/^(\s*)([\s\S]*?)(\s*)$/);
+  const core = m[2];
+  if (!core) return s;
+  let out = Object.prototype.hasOwnProperty.call(I18N_EN, core) ? I18N_EN[core] : undefined;
+  if (out === undefined) {
+    for (const [re, rep] of I18N_PATTERNS) {
+      if (re.test(core)) { out = core.replace(re, rep); break; }
+    }
+  }
+  // Emoji o simbolo davanti a una frase nota (es. "🅰️ Far uscire una pedina").
+  if (out === undefined) {
+    const pm = core.match(/^([^\p{L}]+?)\s+(\p{L}[\s\S]*)$/u);
+    if (pm && Object.prototype.hasOwnProperty.call(I18N_EN, pm[2])) out = pm[1] + " " + I18N_EN[pm[2]];
+  }
+  return out === undefined ? s : m[1] + out + m[3];
+}
+
+// Registro delle mosse (scritto in italiano nello stato della partita, uguale
+// per tutti): in inglese si traduce solo quando si mostra.
+const LOG_EN_RULES = [
+  [/^Nuova mano distribuita \(mazziere: (\S+)\)\. In attesa dello scambio tra compagni\.$/, "New hand dealt (dealer: $1). Waiting for the partner exchange."],
+  [/ ha scelto la carta da scambiare\.$/, " chose the card to exchange."],
+  [/^Scambio completato, si comincia a giocare\.$/, "Exchange done, let's play."],
+  [/^Nuova partita nella stessa stanza\.$/, "New game in the same room."],
+  [/^La coppia (.+) vince la partita!$/, "Team $1 wins the game!"],
+  [/ gioca un Jack: /, " plays a Jack: "],
+  [/^scambio \(Jack\) tra /, "swap (Jack) between "],
+  [/\) e /g, ") and "],
+  [/ mangia (\S+) con parte del 7\./, " captures $1 with part of the 7."],
+  [/ mangia (\S+) con /, " captures $1 with "],
+  [/ gioca il 7 \(/, " plays the 7 ("],
+  [/ finisce in casa a metà 7: il resto continua sulle pedine di (\S+)\)/, " reaches home mid-7: the rest continues on $1's pawns)"],
+  [/ mangiata sulla base da (\S+) che entra\./, " captured on the base by $1 coming in."],
+  [/ entra in gioco con (\S+) \(sulla base\)\./, " enters play with $1 (on the base)."],
+  [/ muove con /, " moves with "],
+  [/ brucia (\S+) \(nessuna mossa\)\./, " burns $1 (no move)."],
+  [/ ha superato la propria base senza entrare in casa — /, " passed its own base without going home — "],
+  [/il numero \((\d+)\) non corrisponde a nessuna delle 4 caselle-casa da questa posizione \(a (\d+) passi dalla base\)\./, "the number ($1) doesn't match any of the 4 home squares from this position ($2 steps from the base)."],
+  [/il percorso era bloccato da (\S+) #(\d) sulla casella (\d+)\./, "the path was blocked by $1 #$2 on square $3."],
+  [/la casella-casa di destinazione era già occupata da una tua pedina\./, "the target home square was already taken by one of your pawns."],
+  [/motivo non identificato \(segnalalo: partenza a (\d+) passi dalla base, numero (\d+)\)\./, "unknown reason (please report it: start $1 steps from the base, number $2)."],
+  [/sulla base di (\S+)/g, "on $1's base"],
+  [/(\d+) caselle prima della base di (\S+)/g, "$1 squares before $2's base"],
+  [/(\d+) caselle dopo la base di (\S+)/g, "$1 squares after $2's base"],
+  [/casa#(\d)/g, "home#$1"],
+];
+function trLog(line) {
+  if (LANG !== "en" || typeof line !== "string") return line;
+  let out = line;
+  for (const [re, rep] of LOG_EN_RULES) out = out.replace(re, rep);
+  return trColors(out);
+}
+
+// --- Traduzione dello schermo (solo in inglese) ---
+const I18N_ORIG = new WeakMap(); // nodo di testo -> testo italiano originale
+const I18N_ATTRS = ["placeholder", "aria-label", "title"];
+function i18nSkip(node) {
+  const p = node.nodeType === 1 ? node : node.parentElement;
+  return !p || !!p.closest("script,style,textarea,.notranslate,[translate='no']");
+}
+function i18nText(node) {
+  if (i18nSkip(node)) return;
+  const v = node.nodeValue;
+  const out = tr(v);
+  if (out !== v) {
+    if (!I18N_ORIG.has(node)) I18N_ORIG.set(node, v);
+    node.nodeValue = out;
+  }
+}
+function i18nAttrs(elm) {
+  // gli attributi (scritte d'aiuto) si traducono anche dentro le caselle del codice
+  if (elm.closest("script,style")) return;
+  for (const a of I18N_ATTRS) {
+    if (!elm.hasAttribute(a)) continue;
+    const v = elm.getAttribute(a);
+    const out = tr(v);
+    if (out !== v) {
+      if (!elm.hasAttribute("data-i18n-" + a)) elm.setAttribute("data-i18n-" + a, v);
+      elm.setAttribute(a, out);
+    }
+  }
+}
+function i18nTree(root) {
+  if (!root || LANG !== "en") return;
+  if (root.nodeType === 3) return i18nText(root);
+  if (root.nodeType !== 1) return;
+  i18nAttrs(root);
+  root.querySelectorAll("[placeholder],[aria-label],[title]").forEach(i18nAttrs);
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = w.nextNode())) i18nText(n);
+}
+// Torna all'italiano senza ricaricare: rimette i testi originali salvati.
+function i18nRestore(root) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = w.nextNode())) if (I18N_ORIG.has(n)) { n.nodeValue = I18N_ORIG.get(n); I18N_ORIG.delete(n); }
+  root.querySelectorAll("[data-i18n-placeholder],[data-i18n-aria-label],[data-i18n-title]").forEach((elm) => {
+    for (const a of I18N_ATTRS) if (elm.hasAttribute("data-i18n-" + a)) { elm.setAttribute(a, elm.getAttribute("data-i18n-" + a)); elm.removeAttribute("data-i18n-" + a); }
+  });
+}
+let i18nObserver = null;
+function i18nStart() {
+  if (i18nObserver || typeof MutationObserver === "undefined") return;
+  i18nObserver = new MutationObserver((muts) => {
+    if (LANG !== "en") return;
+    for (const m of muts) {
+      if (m.type === "childList") m.addedNodes.forEach(i18nTree);
+      else if (m.type === "characterData") i18nText(m.target);
+      else if (m.type === "attributes") i18nAttrs(m.target);
+    }
+  });
+  i18nObserver.observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: I18N_ATTRS });
+  i18nTree(document.body);
+}
+function setLang(lang) {
+  if (lang !== "it" && lang !== "en") return;
+  LANG = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  document.documentElement.lang = lang;
+  if (lang === "en") { i18nStart(); i18nTree(document.body); }
+  else i18nRestore(document.body);
+  if (typeof onLangChanged === "function") onLangChanged();
+}
+// Finestre del telefono (conferma, domanda, avviso): stesso dizionario.
+(() => {
+  const c = window.confirm, p = window.prompt, a = window.alert;
+  window.confirm = (msg) => c.call(window, tr(String(msg)));
+  window.prompt = (msg, def) => p.call(window, tr(String(msg)), def);
+  window.alert = (msg) => a.call(window, tr(String(msg)));
+})();
+if (LANG === "en") {
+  if (document.body) i18nStart();
+  else document.addEventListener("DOMContentLoaded", i18nStart);
+}
+</script>
+<script>
+// ============================================================
 // Wrapper minimale per Firebase Realtime Database.
 // Riempi firebase-config.js con le tue chiavi (vedi README).
 // ============================================================
@@ -7300,7 +7949,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.04";
+const APP_VERSION = "v6.05";
 
 let myColor = null;
 let myRoomId = null;
@@ -7475,7 +8124,8 @@ function renderLobby() {
         el("button", { class: "bx-card bx-imp", onclick: (ev) => vtGo(ev.currentTarget, ".tl-prog", openTutorial) },
           el("span", { class: "bx-k" }, "🎓 Impara"),
           el("div", { class: "bx-ring" }, bentoRing(tutFatte, tutTotal), el("span", { class: "bx-t" }, `${tutFatte}/${tutTotal}`)))),
-      el("p", { class: "app-meta home-meta" }, `Tock by Mig · ${APP_VERSION} · © 2026 Mig · `, el("a", { href: "privacy.html", class: "home-privacy" }, "Privacy")),
+      el("p", { class: "app-meta home-meta" }, `Tock by Mig · ${APP_VERSION} · © 2026 Mig · `, el("a", { href: "privacy.html", class: "home-privacy" }, "Privacy"), " · ",
+        el("button", { class: "home-lang notranslate", translate: "no", onclick: () => setLang(LANG === "en" ? "it" : "en") }, LANG === "en" ? "🇮🇹 Italiano" : "🇬🇧 English")),
       homeScreenHint()
     )
   );
@@ -7603,7 +8253,7 @@ function buildInviteLink(roomId) {
 // un prompt così può comunque essere copiato a mano.
 async function shareInviteLink(roomId) {
   const link = buildInviteLink(roomId);
-  const text = `Vieni a giocare a Tock con me! Stanza ${roomId}: ${link}`;
+  const text = tr(`Vieni a giocare a Tock con me! Stanza ${roomId}: ${link}`);
   try {
     if (navigator.share) {
       await navigator.share({ title: "Tock", text, url: link });
@@ -7673,7 +8323,7 @@ function codeBoxesDraw(row) {
   const prev = row._shown || "";
   row.querySelectorAll(".cf-box, .cf-hint").forEach((n) => n.remove());
   const focused = document.activeElement === input;
-  if (!v && !focused) row.appendChild(el("div", { class: "cf-hint" }, "Tocca qui e scrivi il codice"));
+  if (!v && !focused) row.appendChild(el("div", { class: "cf-hint" }, tr("Tocca qui e scrivi il codice")));
   [...v].forEach((c, i) => row.appendChild(el("div", { class: "cf-box filled" }, i >= prev.length || prev[i] !== c ? el("span", { class: "ch" }, c) : c)));
   if (focused && v.length < 14) row.appendChild(el("div", { class: "cf-box active" }));
   row.classList.toggle("cf-long", v.length > 8);
@@ -7847,7 +8497,7 @@ async function continueFromRoomCode() {
   }
 
   if (!snap.exists()) {
-    if (fx) await fx.finish("ok", ["Stanza", "nuova!"], "Non esiste ancora: la crei tu.", "Stanza nuova");
+    if (fx) await fx.finish("ok", LANG === "en" ? ["New", "room!"] : ["Stanza", "nuova!"], "Non esiste ancora: la crei tu.", "Stanza nuova");
     vtGo(fx && fxRow.querySelector(".cf-okx"), VT_TO_ROOM, () => renderModeChoice(roomId));
     return;
   }
@@ -7856,7 +8506,7 @@ async function continueFromRoomCode() {
   const heroGo = (render) => vtGo(fx && fxRow.querySelector(".cf-okx"), VT_TO_ROOM, render);
   if (fx) {
     const nGioc = COLORS.filter((c) => existing.players && existing.players[c] && !existing.players[c].isBot).length;
-    await fx.finish("ok", ["Stanza", "trovata!"], nGioc ? `${nGioc} ${nGioc === 1 ? "giocatore" : "giocatori"} al tavolo.` : "Al momento è vuota.", "Stanza trovata");
+    await fx.finish("ok", LANG === "en" ? ["Room", "found!"] : ["Stanza", "trovata!"], nGioc ? `${nGioc} ${nGioc === 1 ? "giocatore" : "giocatori"} al tavolo.` : "Al momento è vuota.", "Stanza trovata");
   }
 
   // Rientro: se questo dispositivo ha già un colore assegnato in questa
@@ -10863,7 +11513,7 @@ function flashTitleForMyTurn() {
   if (titleFlashTimer) return;
   let on = false;
   titleFlashTimer = setInterval(() => {
-    document.title = on ? ORIGINAL_TITLE : "🔴 Tocca a te! — Tock";
+    document.title = on ? ORIGINAL_TITLE : tr("🔴 Tocca a te! — Tock");
     on = !on;
   }, 900);
 }
@@ -14100,6 +14750,20 @@ function applySkin(k) {
   rebuildBoardForTheme();
 }
 
+// v6.05: scelta della lingua (Italiano / English), nelle Impostazioni.
+function langSwitch() {
+  return el(
+    "div",
+    { class: "sx-lang notranslate", translate: "no" },
+    ...[["it", "🇮🇹 Italiano"], ["en", "🇬🇧 English"]].map(([k, lab]) =>
+      el("button", { class: "sx-lang-btn" + (LANG === k ? " on" : ""), "aria-pressed": LANG === k ? "true" : "false", onclick: () => setLang(k) }, lab)
+    )
+  );
+}
+function onLangChanged() {
+  if (document.querySelector("#picker-wrap .sx-box")) openSettingsPanel(true);
+  else if (document.querySelector("#app .bx-home")) renderLobby();
+}
 function openSettingsPanel(keepScroll) {
   const wrap = document.getElementById("picker-wrap");
   const prev = keepScroll === true && wrap ? wrap.querySelector(".picker-scroll") : null;
@@ -14133,6 +14797,8 @@ function openSettingsPanel(keepScroll) {
         )
       )
     ),
+    el("div", { class: "sx-sec" }, "🌍 Lingua"),
+    langSwitch(),
     el("div", { class: "sx-sec" }, "Suoni"),
     el(
       "div",
@@ -15278,9 +15944,13 @@ const LOG_EVENT_TYPES = [
 // pipIcon, o null se la riga non nomina una pedina precisa di quel colore
 // (es. una mangiata generica, che non indica mai il numero) — in quel
 // caso il chiamante ricade sul pallino/icona per tipo di evento di prima.
+// Nome del colore nella lingua in cui si MOSTRA il registro (vedi trLog).
+function logColorName(c) {
+  return LANG === "en" ? IT_COLOR_EN[colorLabel(c)] : colorLabel(c);
+}
 function actorPawnNumberInLine(line, color) {
   if (!color) return null;
-  const label = colorLabel(color);
+  const label = logColorName(color);
   const idx = line.indexOf(label);
   if (idx === -1) return null;
   const after = line.slice(idx + label.length, idx + label.length + 6);
@@ -15290,7 +15960,7 @@ function actorPawnNumberInLine(line, color) {
   if (n < 1 || n > 4) return null;
   return n - 1;
 }
-function logEventBadge(line, fallbackColor) {
+function logEventBadge(line, fallbackColor, itLine) {
   // Priorità alla PEDINA vera e propria: stesso disegno (cerchio colorato
   // + pallini a dado) già usato nei picker Jack/7 per riconoscere le 4
   // pedine di un colore a colpo d'occhio — così nel registro si vede
@@ -15301,7 +15971,7 @@ function logEventBadge(line, fallbackColor) {
     wrap.appendChild(pipIcon(fallbackColor, pawnIdx, 21));
     return wrap;
   }
-  const type = LOG_EVENT_TYPES.find((t) => t.test(line));
+  const type = LOG_EVENT_TYPES.find((t) => t.test(itLine || line));
   if (!type) return el("span", { class: "log-dot", style: `background:${fallbackColor ? `var(--${fallbackColor})` : "#C7BCA4"};` });
   const bg = type.byActorColor ? (fallbackColor ? `var(--${fallbackColor})` : "#3E8FCB") : type.bg;
   return el("span", { class: "log-dot", style: `background:${bg};` }, svgIcon(11, 11, "0 0 24 24", "#FFFFFF", type.sw, type.shapes));
@@ -15330,15 +16000,15 @@ function pawnInlineIcon(color, pawnIndex) {
 // "Rosso gioca il 7" seguono "#1", "#3", "#2" senza ripetere "Rosso" per
 // ognuno: sono comunque le SUE pedine.
 function richLogText(line, actorColor) {
-  const names = LOG_COLORS.map(colorLabel);
-  const re = new RegExp(`\\b(${names.join("|")})\\b|(?<!casa)#(\\d)\\b`, "g");
+  const names = LOG_COLORS.map(logColorName);
+  const re = new RegExp(`\\b(${names.join("|")})\\b|(?<!casa|home)#(\\d)\\b`, "g");
   const parts = [];
   let last = 0, m;
   let activeColor = actorColor || null;
   while ((m = re.exec(line))) {
     if (m.index > last) parts.push(line.slice(last, m.index));
     if (m[1]) {
-      activeColor = LOG_COLORS.find((c) => colorLabel(c) === m[1]) || activeColor;
+      activeColor = LOG_COLORS.find((c) => logColorName(c) === m[1]) || activeColor;
       parts.push(el("b", {}, m[1]));
     } else {
       const n = parseInt(m[2], 10);
@@ -15360,7 +16030,7 @@ function detectLogColor(line) {
   let bestColor = null;
   let bestIndex = Infinity;
   for (const c of LOG_COLORS) {
-    const idx = line.indexOf(colorLabel(c));
+    const idx = line.indexOf(logColorName(c));
     if (idx !== -1 && idx < bestIndex) {
       bestIndex = idx;
       bestColor = c;
@@ -15499,13 +16169,14 @@ function fillLogList(list, state) {
   const all = state.log || [];
   const items = (logExpanded ? all : all.slice(-8)).slice().reverse();
   items.forEach((rawLine) => {
-    const line = displayLogLine(rawLine);
+    const itLine = displayLogLine(rawLine);
+    const line = trLog(itLine);
     const color = detectLogColor(line);
     list.appendChild(
       el(
         "div",
         { class: "log-line" },
-        logEventBadge(line, color),
+        logEventBadge(line, color, itLine),
         el("span", { class: "log-text" }, richLogText(line, color))
       )
     );
@@ -15552,7 +16223,7 @@ function downloadDebugDump(state) {
   }
   lines.push("");
   lines.push("=== REGISTRO MOSSE (in ordine) ===");
-  (state.log || []).forEach((line, i) => lines.push(`${i + 1}. ${displayLogLine(line)}`));
+  (state.log || []).forEach((line, i) => lines.push(`${i + 1}. ${trLog(displayLogLine(line))}`));
 
   const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
