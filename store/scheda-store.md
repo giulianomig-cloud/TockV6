@@ -67,4 +67,4 @@ tock,gioco da tavolo,carte,coppie,pedine,squadre,multiplayer,amici,online,famigl
 ## Immagini già pronte (cartella `store/`)
 - `banner-1024x500.png` — immagine in evidenza (Google Play, obbligatoria)
 - `screenshots/1-home.png` … `5-impara.png` — 1080×1920, schermate del telefono (ne servono almeno 2)
-- Icona 512×512: `icon-v3-512.png` nella cartella principale
+- Icona 512×512: `icon-v6-512.png` nella cartella principale
