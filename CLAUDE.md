@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.06** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.07** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -260,9 +260,9 @@
 - Notte da casinò: proposte A velluto bordeaux / B art déco nero e oro / C luci di Las Vegas SCARTATE (resta com'è).
 - Icona dell'app (v6.03, immagine mandata dall'utente): 4 tappi lucidi (rosso 1 pallino, verde 2, blu 3, giallo 4)
   in un riquadro blu notte col BORDINO BLU LUMINOSO, SENZA il fondo marrone dell'immagine originale (richiesto
-  dall'utente; scartate: versione senza bordino a tutto campo, versione col marrone). `icon-v6-192/512.png` = riquadro
-  col bagliore su fondo TRASPARENTE; `icon-v6-180.png` (iPhone, che non accetta trasparenza) e
-  `icon-v6-512-maskable.png` (Android tondo, riquadro al 78%) su blu quasi nero #060B1F. Proposte scartate in passato: logo su
+  dall'utente; scartate: versione senza bordino a tutto campo, versione col marrone). `icon-v6-192/512.png` (dalla v6.07: prima
+  erano TRASPARENTI e molti Android ci mettevano dietro un quadrato BIANCO, segnalato), `icon-v6-180.png` (iPhone) e
+  `icon-v6-512-maskable.png` (Android tondo, riquadro al 78%) tutte su blu quasi nero #060B1F (MAI fondo trasparente). Proposte scartate in passato: logo su
   crema, pedine sul tabellone di legno, carta + pedine, pedine su crema. Non riproporle.
 - Animazioni dei menu portate nel GIOCO (v5.65, scelti i gruppi 1 e 2 dai video di prova):
   1) Elemento che vola: ⚙️ Impostazioni, ≡ Registro, 💬 chat (anteprima o pulsante) e "📜 Regolamento" si
