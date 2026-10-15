@@ -1005,13 +1005,6 @@ html[lang="en"] .dealer-slot.dealer-winner::before { content: "👑 Dealer" !imp
 .mm-slot { background: var(--bx-card); border-radius: 18px; padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: var(--bx-shadow); min-width: 0; }
 .mm-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 1.1rem; background: var(--bx-line); }
 .mm-in .mm-av { animation: mm-pop .45s cubic-bezier(.3,1.6,.5,1); }
-.mm-av.mm-av-emoji { background: #FFFFFF; font-size: 1.45rem; box-shadow: 0 6px 14px -10px rgba(60,40,10,.5); }
-:root[data-theme="dark"] .mm-av.mm-av-emoji { background: #2C2620; }
-.av-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 2px 0 14px; }
-.av-pick { margin: 0; padding: 0; aspect-ratio: 1; border-radius: 50%; border: none; background: var(--bx-card); box-shadow: 0 6px 14px -10px rgba(60,40,10,.5); font-size: 1.5rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.av-pick.on { box-shadow: 0 0 0 3px var(--bx-bg), 0 0 0 5px #D9A93A; }
-.lb-av { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: var(--bx-card); box-shadow: 0 6px 14px -10px rgba(60,40,10,.55); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-.bx-pod .bx-pav { font-size: 1rem; line-height: 1; }
 @keyframes mm-pop { 0% { transform: scale(.3); } 100% { transform: scale(1); } }
 .mm-me .mm-av { box-shadow: 0 0 0 3px var(--bx-card), 0 0 0 5px #D9A93A; }
 .mm-empty { gap: 3px; }
@@ -5396,7 +5389,6 @@ const I18N_EN = {
   "🎲 Gioca subito ": "🎲 Play now ",
   "Come ti chiami? Il nome lo vedono gli altri giocatori e serve per la classifica.": "What's your name? Other players will see it, and it's used for the leaderboard.",
   "Il tuo nome": "Your name",
-  "Il tuo avatar": "Your avatar",
   "tu": "you",
   "il tuo nome": "your name",
   "Scrivi il tuo nome.": "Type your name.",
@@ -6093,31 +6085,10 @@ function getSavedPlayerShortcut() {
     return null;
   }
 }
-function savePlayerShortcut(id, nome, avatar) {
+function savePlayerShortcut(id, nome) {
   try {
-    const prev = getSavedPlayerShortcut() || {};
-    const av = avatar || (prev.id === id ? prev.avatar : null) || null;
-    localStorage.setItem("tock-player", JSON.stringify(av ? { id, nome, avatar: av } : { id, nome }));
+    localStorage.setItem("tock-player", JSON.stringify({ id, nome }));
   } catch (e) {}
-}
-
-// ---------------- Avatar (v6.14, scelta "A · Emoji su tondo bianco") ----------------
-// Si sceglie con il nome (schermata di "Gioca subito"), si vede in classifica, nel podio della
-// home e nei posti dell'attesa. Salvato sul telefono (tock-player.avatar) e in leaderboard/<id>/avatar.
-// Chi non lo sceglie ne ha uno fisso ricavato dal proprio id (sempre lo stesso).
-const AVATARS = ["🦁", "🦊", "🐼", "🐸", "🐯", "🐨", "🐙", "🦄", "🐶", "🐱", "🐵", "🐧"];
-function defaultAvatar(seed) {
-  let h = 0;
-  for (const ch of String(seed || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return AVATARS[h % AVATARS.length];
-}
-function myAvatar() {
-  const sp = getSavedPlayerShortcut();
-  return (sp && sp.avatar) || defaultAvatar((sp && sp.id) || myPlayerId || myName || "");
-}
-function saveAvatarRemote(id, avatar) {
-  if (!id || !avatar) return;
-  try { leaderboardRef().child(id).update({ avatar }).catch(() => {}); } catch (e) {}
 }
 
 // ---------------- Classifica generale (v5) ----------------------------
@@ -6190,7 +6161,7 @@ async function loadLeaderboard() {
   const snap = await withTimeout(leaderboardRef().get(), 12000, "Il server");
   const all = snap.val() || {};
   return Object.entries(all)
-    .map(([id, p]) => ({ id, nome: (p && p.nome) || "?", avatar: (p && p.avatar) || defaultAvatar(id), vittorie: (p && p.vittorie) || 0, partite: (p && p.partite) || 0, vinte: (p && p.vinte) || 0 }))
+    .map(([id, p]) => ({ id, nome: (p && p.nome) || "?", vittorie: (p && p.vittorie) || 0, partite: (p && p.partite) || 0, vinte: (p && p.vinte) || 0 }))
     .filter((p) => p.vittorie > 0 || p.partite > 0)
     .sort((a, b) => b.vittorie - a.vittorie || a.nome.localeCompare(b.nome, "it"));
 }
@@ -7986,7 +7957,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.14";
+const APP_VERSION = "v6.15";
 
 let myColor = null;
 let myRoomId = null;
@@ -8104,7 +8075,7 @@ async function fillHomePodium(box) {
   const top = (list || []).filter((p) => p.vittorie > 0).slice(0, 3);
   if (!top.length) { box.appendChild(el("span", { class: "bx-muted" }, list ? "Ancora nessuna vittoria" : "Tocca per vederla")); return; }
   const medal = ["bx-m1", "bx-m2", "bx-m3"];
-  top.forEach((p, i) => box.appendChild(el("div", {}, el("i", { class: medal[i] }, String(i + 1)), el("span", { class: "bx-pav" }, p.avatar), el("span", { class: "bx-pn" }, p.nome), el("span", { class: "bx-pv" }, String(p.vittorie)))));
+  top.forEach((p, i) => box.appendChild(el("div", {}, el("i", { class: medal[i] }, String(i + 1)), el("span", { class: "bx-pn" }, p.nome), el("span", { class: "bx-pv" }, String(p.vittorie)))));
 }
 function renderLobby() {
   const root = $("#app");
@@ -8180,14 +8151,13 @@ function lbMyName() {
 }
 // few: giocatore con poche partite nella "Media" (fuori classifica, in grigio).
 // La barra (solo nella Media) è una barretta sottile sotto il nome.
-function buildLbRow({ rank, name, main, unit, sub, bar, few, avatar }) {
+function buildLbRow({ rank, name, main, unit, sub, bar, few }) {
   const isMe = !!name && String(name).trim().toLowerCase() === lbMyName();
   const cls = "lb-row" + (rank <= 3 && !few ? " lb-r" + rank : "") + (isMe ? " lb-me" : "");
   return el(
     "div",
     { class: cls },
     el("span", { class: "lb-rank" }, few ? "–" : String(rank)),
-    avatar ? el("span", { class: "lb-av" }, avatar) : "",
     el(
       "div",
       { class: "lb-namecol" },
@@ -8248,11 +8218,11 @@ async function renderLeaderboardScreen() {
       const ok = avg.filter((p) => p.partite >= LB_MIN_PARTITE_MEDIA);
       const few = avg.filter((p) => p.partite < LB_MIN_PARTITE_MEDIA);
       if (avg.length === 0) body.appendChild(el("p", { class: "muted" }, "Ancora nessuna partita contata: si riempie dalle prossime partite."));
-      if (ok.length) body.appendChild(card(ok.map((p, i) => buildLbRow({ rank: i + 1, name: p.nome, avatar: p.avatar, main: Math.round(p.rate * 100) + "%", unit: p.vinte + "/" + p.partite, bar: p.rate * 100 }))));
+      if (ok.length) body.appendChild(card(ok.map((p, i) => buildLbRow({ rank: i + 1, name: p.nome, main: Math.round(p.rate * 100) + "%", unit: p.vinte + "/" + p.partite, bar: p.rate * 100 }))));
       else if (avg.length) body.appendChild(el("p", { class: "muted" }, `Nessuno ha ancora giocato ${LB_MIN_PARTITE_MEDIA} partite.`));
       if (few.length) {
         body.appendChild(el("div", { class: "lb-few-label" }, `Poche partite (meno di ${LB_MIN_PARTITE_MEDIA})`));
-        body.appendChild(el("div", { class: "lb-list-card lb-few" }, few.map((p) => buildLbRow({ few: true, name: p.nome, avatar: p.avatar, main: Math.round(p.rate * 100) + "%", unit: p.vinte + "/" + p.partite }))));
+        body.appendChild(el("div", { class: "lb-list-card lb-few" }, few.map((p) => buildLbRow({ few: true, name: p.nome, main: Math.round(p.rate * 100) + "%", unit: p.vinte + "/" + p.partite }))));
       }
       return;
     }
@@ -8262,7 +8232,6 @@ async function renderLeaderboardScreen() {
     else body.appendChild(card(winners.map((p, i) => buildLbRow({
       rank: i + 1,
       name: p.nome,
-      avatar: p.avatar,
       main: String(p.vittorie),
       unit: p.vittorie === 1 ? "vittoria" : "vittorie",
       sub: typeof p.diff === "number" ? (p.diff > 0 ? "+" : "") + p.diff + " catt." : "",
@@ -9637,7 +9606,6 @@ function mmPruneMyDuplicates(d, keep) {
     delete d.players[t];
     delete d.playerIds[t];
     if (d.seen) delete d.seen[t];
-    if (d.avatars) delete d.avatars[t];
     if (Array.isArray(d.order)) d.order = d.order.filter((x) => x !== t);
   });
 }
@@ -9752,8 +9720,6 @@ async function mmJoinRoom(roomId, recycle, token) {
       if (!d.players[token]) d.order.push(token);
       mmPruneMyDuplicates(d, token);
       d.players[token] = mmUniqueName(d.players, token, myName);
-      if (!d.avatars) d.avatars = {};
-      d.avatars[token] = myAvatar();
       if (!d.playerIds) d.playerIds = {};
       d.playerIds[token] = myPlayerId || null;
       if (!d.botTokens) d.botTokens = {};
@@ -9817,14 +9783,6 @@ function renderMatchNameScreen() {
   const saved = getSavedPlayerShortcut();
   const nameField = buildRubricaNameInput("name-input", myName || (saved && saved.nome) || "");
   const go = el("button", { id: "join-btn", class: "primary" }, "Cerca giocatori", forwardArrowIcon());
-  let chosenAvatar = (saved && saved.avatar) || null;
-  const avGrid = el("div", { class: "av-grid", role: "radiogroup", "aria-label": "Il tuo avatar" });
-  const drawAv = () => {
-    const cur = chosenAvatar || myAvatar();
-    avGrid.innerHTML = "";
-    AVATARS.forEach((a) => avGrid.appendChild(el("button", { type: "button", class: "av-pick" + (a === cur ? " on" : ""), "aria-pressed": a === cur ? "true" : "false", onclick: () => { chosenAvatar = a; drawAv(); } }, a)));
-  };
-  drawAv();
   const submit = async () => {
     const typed = nameField.input.value.trim();
     if (!typed) return showToast("Scrivi il tuo nome.");
@@ -9839,9 +9797,7 @@ function renderMatchNameScreen() {
     }
     myName = player.nome;
     myPlayerId = player.id;
-    const av = chosenAvatar || myAvatar();
-    savePlayerShortcut(player.id, player.nome, av);
-    saveAvatarRemote(player.id, av);
+    savePlayerShortcut(player.id, player.nome);
     mmSearch();
   };
   go.onclick = submit;
@@ -9855,8 +9811,6 @@ function renderMatchNameScreen() {
       el("p", { class: "rj-text" }, "Come ti chiami? Il nome lo vedono gli altri giocatori e serve per la classifica."),
       el("p", { class: "step-label" }, "Il tuo nome"),
       nameField.wrap,
-      el("p", { class: "step-label" }, "Il tuo avatar"),
-      avGrid,
       go,
       el("button", { class: "text-link-btn", style: "margin-top:10px;", onclick: () => vtGo(null, null, renderLobby) }, backChevronIcon(), "Torna alla home")
     )
@@ -10005,13 +9959,11 @@ function renderMatchWaiting(state) {
       const isBot = !!(d.botTokens && d.botTokens[t]);
       const nm = d.players[t];
       slots.push(el("div", { class: "mm-slot mm-in" + (t === myToken ? " mm-me" : "") },
-        isBot || !(d.avatars && d.avatars[t])
-          ? el("span", { class: "mm-av", style: isBot ? "" : `background:${tAvatarColor(nm)}` }, isBot ? "🤖" : (nm || "?").trim().charAt(0).toUpperCase())
-          : el("span", { class: "mm-av mm-av-emoji" }, d.avatars[t]),
+        el("span", { class: "mm-av", style: isBot ? "" : `background:${tAvatarColor(nm)}` }, isBot ? "🤖" : (nm || "?").trim().charAt(0).toUpperCase()),
         el("span", { class: "mm-nm" }, t === myToken ? "Tu" : nm)));
     } else if (!d && i === 0) {
       slots.push(el("div", { class: "mm-slot mm-in mm-me" },
-        el("span", { class: "mm-av mm-av-emoji" }, myAvatar()),
+        el("span", { class: "mm-av", style: `background:${tAvatarColor(myName || "")}` }, (myName || "?").trim().charAt(0).toUpperCase()),
         el("span", { class: "mm-nm" }, "Tu")));
     } else {
       slots.push(el("div", { class: "mm-slot" }, el("span", { class: "mm-av mm-empty" }, el("i"), el("i"), el("i")), el("span", { class: "mm-nm" }, "Libero")));

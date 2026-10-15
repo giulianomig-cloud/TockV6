@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.14** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.15** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -82,10 +82,8 @@
 - v6.14 (segnalato: uscendo e rientrando lo stesso giocatore occupava due posti; sull'iPhone l'app sulla Home e
   Safari NON condividono la memoria, quindi sono due "telefoni"): `mmPruneMyDuplicates` toglie un altro posto con lo
   STESSO id della rubrica che tace da 25 s (un omonimo vero risponde ogni 15 s).
-- Avatar (v6.14, scelta "A · Emoji su tondo bianco", scartata "B · tappo colorato + colore"): 12 animali `AVATARS`
-  (🦁🦊🐼🐸🐯🐨🐙🦄🐶🐱🐵🐧) scelti nella schermata del nome di "Gioca subito" (anche da "cambia" in home), salvati in
-  `tock-player.avatar` e in `leaderboard/<id>/avatar`; chi non sceglie ha `defaultAvatar(id)` fisso. Si vedono in
-  classifica (`lb-av`), nel podio della home e nei posti dell'attesa (`draft/avatars/<token>`).
+- Avatar: provati nella v6.14 (emoji di animali su tondo bianco in classifica, podio e attesa; anteprime anche in
+  partita) e TOLTI nella v6.15 su richiesta dell'utente. Non riproporli. Nell'attesa restano le iniziali colorate.
 - Nelle stanze `AUTO-` la chat ha SOLO frasi pronte (`QUICK_CHAT_PHRASES`), niente testo libero: è la condizione
   degli store per le chat fra sconosciuti. Con gli amici la chat resta libera.
 
