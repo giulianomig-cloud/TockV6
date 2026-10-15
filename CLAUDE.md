@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.05** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.06** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -67,8 +67,9 @@
 
 ## Lingua dell'app (v6.05): italiano / inglese
 - Lingua: quella scelta a mano (`tock-lang`), altrimenti quella del telefono (italiano solo se il telefono è
-  in italiano, altrimenti inglese). Si cambia nelle Impostazioni (sezione "🌍 Lingua", `langSwitch`) e in fondo
-  alla home (link "🇬🇧 English" / "🇮🇹 Italiano"); `setLang` cambia al volo senza ricaricare.
+  in italiano, altrimenti inglese). Si cambia nelle Impostazioni (sezione "🌍 Lingua", `langSwitch`) e in home con
+  il tastino rotondo in alto con la bandiera dell'ALTRA lingua, primo a sinistra di 🔊 ☀️ 🧊 (`langToggleButton`,
+  v6.06, scelta "A"; scartati il pulsante largo "Play in English" sotto le tessere e il link piccolo in fondo); `setLang` cambia al volo senza ricaricare.
 - Il codice resta scritto IN ITALIANO. In inglese le scritte si traducono mentre compaiono sullo schermo
   (MutationObserver): `I18N_EN` = frasi esatte, `I18N_PATTERNS` = frasi con nomi/numeri, `tr(s)` per tradurre a
   mano (finestre confirm/prompt/alert sono già coperte, titolo della pagina, testo di condivisione).

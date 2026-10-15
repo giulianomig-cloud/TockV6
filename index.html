@@ -978,7 +978,9 @@ body:has(#app > .lobby-card), .tut-overlay { background: var(--bx-bg); }
 .bx-friends .bx-play { box-shadow: none; background: var(--bx-bg); }
 .bx-home .bx-lb { grid-row: auto; }
 .home-meta .home-privacy { color: inherit; }
-.home-lang { all: unset; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; color: inherit; }
+.bx-icons .ic-lang .ic-e { font-size: 1.05rem; }
+@media (max-width: 374px) { .bx-home .bx-logo { width: 76px; } .bx-icons { gap: 6px; } }
+@media (max-width: 340px) { .bx-home .bx-logo { width: 58px; } .bx-icons { gap: 4px; } }
 .sx-lang { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sx-lang-btn { margin: 0; padding: 12px 8px; border-radius: 16px; border: none; background: var(--bx-card); color: var(--bx-ink); font-weight: 800; font-size: .95rem; box-shadow: var(--bx-shadow); cursor: pointer; }
 .sx-lang-btn.on { background: var(--bx-btn-bg); color: var(--bx-btn-ink); }
@@ -7949,7 +7951,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.05";
+const APP_VERSION = "v6.06";
 
 let myColor = null;
 let myRoomId = null;
@@ -8101,6 +8103,7 @@ function renderLobby() {
       el("div", { class: "bx-top" },
         el("img", { class: "app-logo-img bx-logo", src: logoSrc(currentTheme), alt: "Tock" }),
         el("div", { class: "bx-icons" },
+          langToggleButton(),
           soundTestButton(),
           themePill(),
           fx3dToggleButton())),
@@ -8124,8 +8127,7 @@ function renderLobby() {
         el("button", { class: "bx-card bx-imp", onclick: (ev) => vtGo(ev.currentTarget, ".tl-prog", openTutorial) },
           el("span", { class: "bx-k" }, "🎓 Impara"),
           el("div", { class: "bx-ring" }, bentoRing(tutFatte, tutTotal), el("span", { class: "bx-t" }, `${tutFatte}/${tutTotal}`)))),
-      el("p", { class: "app-meta home-meta" }, `Tock by Mig · ${APP_VERSION} · © 2026 Mig · `, el("a", { href: "privacy.html", class: "home-privacy" }, "Privacy"), " · ",
-        el("button", { class: "home-lang notranslate", translate: "no", onclick: () => setLang(LANG === "en" ? "it" : "en") }, LANG === "en" ? "🇮🇹 Italiano" : "🇬🇧 English")),
+      el("p", { class: "app-meta home-meta" }, `Tock by Mig · ${APP_VERSION} · © 2026 Mig · `, el("a", { href: "privacy.html", class: "home-privacy" }, "Privacy")),
       homeScreenHint()
     )
   );
@@ -14751,6 +14753,16 @@ function applySkin(k) {
 }
 
 // v6.05: scelta della lingua (Italiano / English), nelle Impostazioni.
+// v6.06: in home tastino rotondo con la bandiera dell'ALTRA lingua (scelta "A"),
+// accanto a 🔊 / tema / 🧊.
+function langToggleButton() {
+  const other = LANG === "en" ? "it" : "en";
+  return el(
+    "button",
+    { class: "theme-toggle-btn ic-lang notranslate", translate: "no", "aria-label": other === "en" ? "Play in English" : "Gioca in italiano", onclick: () => setLang(other) },
+    el("span", { class: "ic-e" }, other === "en" ? "🇬🇧" : "🇮🇹")
+  );
+}
 function langSwitch() {
   return el(
     "div",
