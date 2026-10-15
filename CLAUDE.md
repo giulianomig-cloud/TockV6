@@ -262,7 +262,8 @@
   in un riquadro blu notte col BORDINO BLU LUMINOSO, SENZA il fondo marrone dell'immagine originale (richiesto
   dall'utente; scartate: versione senza bordino a tutto campo, versione col marrone). `icon-v6-192/512.png` (dalla v6.07: prima
   erano TRASPARENTI e molti Android ci mettevano dietro un quadrato BIANCO, segnalato), `icon-v6-180.png` (iPhone) e
-  `icon-v6-512-maskable.png` (Android tondo, riquadro al 78%) tutte su blu quasi nero #060B1F (MAI fondo trasparente). Proposte scartate in passato: logo su
+  `icon-v6-512-maskable.png` (Android tondo, riquadro all'80%). Dalla v6.07 nelle icone normali il riquadro col
+  bordino arriva quasi al bordo (98%, "grande come l'altra", chiesto dall'utente) tutte su blu quasi nero #060B1F (MAI fondo trasparente). Proposte scartate in passato: logo su
   crema, pedine sul tabellone di legno, carta + pedine, pedine su crema. Non riproporle.
 - Animazioni dei menu portate nel GIOCO (v5.65, scelti i gruppi 1 e 2 dai video di prova):
   1) Elemento che vola: ⚙️ Impostazioni, ≡ Registro, 💬 chat (anteprima o pulsante) e "📜 Regolamento" si
