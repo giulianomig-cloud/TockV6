@@ -1,3 +1,4 @@
+// Tock © 2026 Mig. Tutti i diritti riservati / All rights reserved.
 // Service worker per Tock.
 //
 // IMPORTANTE: la partita è multiplayer via Firebase in tempo reale, quindi
@@ -9,7 +10,7 @@
 //
 // Cambia CACHE_VERSION ad ogni nuova build pubblicata (tienilo allineato ad
 // APP_VERSION in index.html) così le cache vecchie vengono scartate subito.
-const CACHE_VERSION = "v6-08";
+const CACHE_VERSION = "v6-09";
 const CACHE_NAME = "tock-cache-" + CACHE_VERSION;
 
 const APP_SHELL = [

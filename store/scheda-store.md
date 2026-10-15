@@ -119,3 +119,7 @@ tock,board game,cards,team,pawns,multiplayer,friends,online,family,partners
 ## English images (folder `store/`)
 - `banner-en-1024x500.png` — feature graphic (`banner-en.html` regenerates it)
 - `screenshots-en/1-home.png` … `5-learn.png` — 1080×1920
+
+## Diritti / Copyright
+- Google Play → nome sviluppatore: **Mig**
+- App Store Connect → campo "Copyright": **2026 Mig** (il venditore, con account personale, è il nome e cognome veri)

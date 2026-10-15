@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.08** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.09** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -79,6 +79,11 @@
   quando si mostra (`trLog`, `logColorName`); i test di `LOG_EVENT_TYPES` usano sempre la riga italiana.
 - Nelle partite miste (un telefono in italiano e uno in inglese) ognuno vede la propria lingua; le frasi pronte
   della chat e quelle dei computer si traducono, i messaggi scritti a mano no.
+
+## Diritti (v6.09)
+- "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`
+  (IT + EN), "© 2026 Mig" in fondo alla home. Negli store: Google Play con nome sviluppatore "Mig"; su Apple
+  (account personale) come venditore compare per forza nome e cognome veri, il campo Copyright resta "2026 Mig".
 
 ## Store (v6)
 - Cartella `store/`: `GUIDA-PUBBLICAZIONE.md` (passi per Google Play con PWABuilder e per l'App Store),
