@@ -9,11 +9,11 @@
 //
 // Cambia CACHE_VERSION ad ogni nuova build pubblicata (tienilo allineato ad
 // APP_VERSION in index.html) così le cache vecchie vengono scartate subito.
-const CACHE_VERSION = "v6-02";
+const CACHE_VERSION = "v6-03";
 const CACHE_NAME = "tock-cache-" + CACHE_VERSION;
 
 const APP_SHELL = [
-  "./index.html", "./privacy.html", "./manifest.json", "./icon-v3-180.png", "./icon-v3-192.png", "./icon-v3-512.png", "./logo.png", "./logo-dark.png",
+  "./index.html", "./privacy.html", "./manifest.json", "./icon-v6-180.png", "./icon-v6-192.png", "./icon-v6-512.png", "./logo.png", "./logo-dark.png",
   // Font in locale (vedi il commento nell'<head> di index.html) — messi
   // qui esplicitamente così sono in cache fin dalla primissima
   // installazione, non solo dopo un primo caricamento online riuscito.

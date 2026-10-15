@@ -18,12 +18,12 @@
 - Multigiocatore online tramite Firebase Realtime Database (script caricati da gstatic in `index.html`).
 - Grafiche disponibili (skin, `html[data-skin=...]`): `wood`, `bright`, `night`, `arcade`.
 - Altri file: `sw.js` (service worker / cache offline), `manifest.json` (icone e nome app),
-  icone `icon-v3-*.png`, loghi `logo.png` e `logo-dark.png`, caratteri in `fonts/` (Plus Jakarta Sans
+  icone `icon-v6-*.png`, loghi `logo.png` e `logo-dark.png`, caratteri in `fonts/` (Plus Jakarta Sans
   500-800 + Permanent Marker, con licenze), suoni registrati in `sounds/` (es. `burn.mp3`). I font mancavano fino alla v5.78: senza di loro `sw.js` non salvava
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.02** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.03** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -239,8 +239,10 @@
   0,65 s; anche nel tutorial); al centro bordo appena incandescente che respira, fondo bruciacchiato, 8 faville ben
   visibili ("qualche favilla falla intendere") e un filo di fumo.
 - Notte da casinò: proposte A velluto bordeaux / B art déco nero e oro / C luci di Las Vegas SCARTATE (resta com'è).
-- Icona dell'app: resta quella attuale (pedine a tappo su blu). Proposte scartate: logo su crema,
-  pedine sul tabellone di legno, carta + pedine, pedine su crema. Non riproporle.
+- Icona dell'app (v6.03, immagine mandata dall'utente): 4 tappi lucidi (rosso 1 pallino, verde 2, blu 3, giallo 4)
+  su blu notte a tutto campo, file `icon-v6-180/192/512.png` + `icon-v6-512-maskable.png` (tappi nell'80% centrale
+  per i ritagli tondi di Android). Le vecchie `icon-v3-*` sono state tolte. Proposte scartate in passato: logo su
+  crema, pedine sul tabellone di legno, carta + pedine, pedine su crema. Non riproporle.
 - Animazioni dei menu portate nel GIOCO (v5.65, scelti i gruppi 1 e 2 dai video di prova):
   1) Elemento che vola: ⚙️ Impostazioni, ≡ Registro, 💬 chat (anteprima o pulsante) e "📜 Regolamento" si
   aprono uscendo dal pulsante toccato (`openPickerFrom`) e ci rientrano con ✕ / Chiudi / tocco fuori
