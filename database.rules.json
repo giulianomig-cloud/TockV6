@@ -1,0 +1,29 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "games": {
+      "$room": { ".read": true, ".write": true }
+    },
+    "presence": {
+      "$room": {
+        ".read": true,
+        "$color": { "$conn": { ".write": true } }
+      }
+    },
+    "players": {
+      ".read": true,
+      "$id": { ".write": "!data.exists()" }
+    },
+    "leaderboard": {
+      ".read": true,
+      "$id": { ".write": true }
+    },
+    "codes": {
+      "$code": { ".read": true, ".write": true }
+    },
+    "stats": {
+      "$name": { ".read": true, ".write": true }
+    }
+  }
+}
