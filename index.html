@@ -4845,6 +4845,12 @@ function sevenValidateOwnPortions(state, color, ownDistribution) {
   if (ordered.length === 0) {
     return { order: [], paths: [], pawns: clonePawns(state.pawns), allHome: state.pawns[color].every((p) => p >= 1000) };
   }
+  // v6.16: fra gli ordini che funzionano sceglie quello che porta in casa
+  // PIÙ pedine (segnalato: Blu con #3 a 5 caselle dalla base e #4 in
+  // casa#1, 7 diviso 6+1: il primo ordine provato muoveva #3 per prima,
+  // trovava casa#1 occupata e la faceva proseguire sul giro; muovendo
+  // prima #4 in casa#2, #3 poteva entrare in casa#1).
+  let best = null;
   for (const perm of permutations(ordered)) {
     const scratch = clonePawns(state.pawns);
     const order = [];
@@ -4860,10 +4866,15 @@ function sevenValidateOwnPortions(state, color, ownDistribution) {
       paths.push(path);
     }
     if (ok) {
-      return { order, paths, pawns: scratch, allHome: scratch[color].every((p) => p >= 1000) };
+      const homeCount = scratch[color].filter((p) => p >= 1000).length;
+      if (!best || homeCount > best.homeCount) {
+        best = { order, paths, pawns: scratch, allHome: homeCount === scratch[color].length, homeCount };
+      }
+      if (best.allHome || ordered.length === 1) break; // meglio di così non si può
     }
   }
-  return null;
+  if (!best) return null;
+  return { order: best.order, paths: best.paths, pawns: best.pawns, allHome: best.allHome };
 }
 
 // Validates a distribution — [{pawnIndex, steps, forPartner?}, ...] summing
@@ -5167,6 +5178,12 @@ function applyMove(state, color, card, move) {
           reason = `il percorso era bloccato da ${cn(blocker.color)} #${blocker.pawnIndex + 1} sulla casella ${mid.find((p) => p < 1000 && occupantAt(state, p) === blocker)}.`;
         } else if (finalDest >= 1000 && homeOccupant(state, color, finalDest - 1000) !== -1) {
           reason = `la casella-casa di destinazione era già occupata da una tua pedina.`;
+        } else if (mid.some((p) => p >= 1000 && homeOccupant(state, color, p - 1000) !== -1)) {
+          // v6.16: prima finiva in "motivo non identificato"
+          reason = `la strada in casa era chiusa da una tua pedina già in casa.`;
+        } else if (finalDest >= 1000) {
+          // v6.16: la casa era raggiungibile, ma entrarci non è obbligatorio
+          reason = `ha scelto di proseguire il giro.`;
         } else {
           reason = `motivo non identificato (segnalalo: partenza a ${distanceToBase} passi dalla base, numero ${steps}).`;
         }
@@ -5861,6 +5878,8 @@ const LOG_EN_RULES = [
   [/il numero \((\d+)\) non corrisponde a nessuna delle 4 caselle-casa da questa posizione \(a (\d+) passi dalla base\)\./, "the number ($1) doesn't match any of the 4 home squares from this position ($2 steps from the base)."],
   [/il percorso era bloccato da (\S+) #(\d) sulla casella (\d+)\./, "the path was blocked by $1 #$2 on square $3."],
   [/la casella-casa di destinazione era già occupata da una tua pedina\./, "the target home square was already taken by one of your pawns."],
+  [/la strada in casa era chiusa da una tua pedina già in casa\./, "the way home was closed by one of your pawns already home."],
+  [/ha scelto di proseguire il giro\./, "chose to keep going around."],
   [/motivo non identificato \(segnalalo: partenza a (\d+) passi dalla base, numero (\d+)\)\./, "unknown reason (please report it: start $1 steps from the base, number $2)."],
   [/sulla base di (\S+)/g, "on $1's base"],
   [/(\d+) caselle prima della base di (\S+)/g, "$1 squares before $2's base"],
@@ -7957,7 +7976,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.15";
+const APP_VERSION = "v6.16";
 
 let myColor = null;
 let myRoomId = null;
@@ -15385,8 +15404,21 @@ function sevenRowLabel(p, val) {
   // se QUESTA allocazione la fa entrare in casa (non solo "prosegue" sul
   // giro) — altrimenti l'etichetta resta generica finché non si assegna
   // almeno un passo (segnalato: "non scrive entra in casa ma solo passa").
+  // v6.16: guarda anche i passi delle ALTRE proprie pedine (muovendone
+  // prima una già in casa si può liberare la casella per questa).
   if (val > 0) {
-    const path = sevenSinglePawnPath(currentState, p.color, pos, val, true, hasLapped(currentState, p.color, p.pawnIndex));
+    let path = null;
+    if (sevenAllocation) {
+      const ownDist = Object.entries(sevenAllocation)
+        .filter(([key, steps]) => steps > 0 && key.slice(0, key.indexOf(":")) === p.color)
+        .map(([key, steps]) => ({ pawnIndex: parseInt(key.slice(key.indexOf(":") + 1), 10), steps }));
+      const res = sevenValidateOwnPortions(currentState, p.color, ownDist);
+      if (res) {
+        const i = res.order.findIndex((o) => o.pawnIndex === p.pawnIndex);
+        if (i !== -1) path = res.paths[i];
+      }
+    }
+    if (!path) path = sevenSinglePawnPath(currentState, p.color, pos, val, true, hasLapped(currentState, p.color, p.pawnIndex));
     if (path && path[path.length - 1] >= 1000) return "In gioco → entra in casa";
   }
   return "In gioco → prosegue";

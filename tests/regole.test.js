@@ -281,6 +281,18 @@ test("il 7: se le proprie pedine finiscono tutte in casa, i passi avanzati vanno
   assert.equal(s.pawns.yellow[0], 45);
 });
 
+test("il 7: muove prima la pedina in casa per far entrare l'altra (6+1)", () => {
+  // Segnalato (v6.16): #3 a 5 caselle dalla base, #4 in casa#1. Con 6 passi a #3 e 1 a #4,
+  // #4 va in casa#2 e #3 entra in casa#1 (prima #3 proseguiva il giro).
+  const s = partita({ red: [CASA(3), CASA(2), 59, CASA(0)] });
+  T.applyMove(s, "red", "7-hearts", {
+    type: "seven",
+    distribution: [{ pawnIndex: 2, steps: 6 }, { pawnIndex: 3, steps: 1 }],
+  });
+  assert.equal(s.pawns.red[2], CASA(0));
+  assert.equal(s.pawns.red[3], CASA(1));
+});
+
 test("il 7: nel foglio compaiono solo le pedine che possono davvero muovere", () => {
   // Rosse già in casa (bloccate) + una a 63: anche se i passi avanzati possono
   // andare al compagno, si propone solo la rossa che può muovere.
