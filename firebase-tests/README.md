@@ -39,6 +39,11 @@ npm run controlla-sito
 - `test/vulnerabilita-regole-proposte.test.js` — le falle di partenza ripetute con le regole proposte
   (CHIUSA / RIDOTTA / RESTA).
 - `test/e2e-regole-transizione.test.js` — il gioco vero con le regole di transizione.
+- `test/e2e-versioni-transizione.test.js` / `test/e2e-versioni-definitive.test.js` — la versione VECCHIA (v6.16,
+  servita col database dell'emulatore al posto di quello vero) con le regole di transizione e definitive, anche in
+  stanza con la v6.20.
+- `test/vulnerabilita-regole-transizione.test.js` — gli attacchi con le regole di transizione (cosa RESTA aperto).
+- `DISTRIBUZIONE.md` — procedura di distribuzione, verifiche e ripristino, con la tabella di cosa può fare ogni versione.
 - `test/e2e-regole-attuali.test.js` e `test/e2e-regole-proposte.test.js` — il gioco vero in Chromium con più
   "telefoni", collegato all'emulatore (`index.html?emu=1`, funziona solo su localhost), con le regole di oggi e con
   quelle proposte. Usano Playwright e Chromium già presenti sul computer (`test/e2e-banco.js`).

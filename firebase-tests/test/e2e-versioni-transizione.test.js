@@ -53,3 +53,15 @@ test("Stanza mista: v6.20 e v6.16 insieme; la v6.16 vede l'avviso 'aggiorna' e n
   assert.match(testo, /v6\.20/);
   assert.deepEqual(errori, []);
 });
+
+test("v6.16 legge senza problemi una classifica con voci vecchie e voci nuove della v6.20 (utile anche per il ripristino)", LIMITE, async () => {
+  await scrivi("leaderboard", {
+    "-vecchioAnna": { nome: "Anna", vittorie: 12, partite: 20, vinte: 12 },
+    "uidNuovoAnna": { nome: "Anna", vittorie: 1, partite: 2, vinte: 1, ultimaStanza: "AUTO-1", ultimaPartita: "abc" },
+  });
+  const t = await telefono("Lettore-v616", { vecchia: true });
+  const righe = await t.page.evaluate(() => loadLeaderboard());
+  assert.equal(righe.length, 2);
+  assert.deepEqual(righe.map((r) => r.vittorie).sort((a, b) => a - b), [1, 12]);
+  assert.deepEqual(errori, []);
+});

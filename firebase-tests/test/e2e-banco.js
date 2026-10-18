@@ -83,6 +83,10 @@ function preparaBanco(fileRegole) {
     const versione = await page.evaluate(() => APP_VERSION);
     if (vecchia) assert.equal(versione, "v6.16");
     else assert.notEqual(versione, "v6.16");
+    // la pagina deve parlare con l'emulatore, mai col database vero
+    const dove = await page.evaluate(() => (db && db.app && db.app.options && db.app.options.databaseURL) || "");
+    const emu = await page.evaluate(() => typeof FIREBASE_EMULATOR !== "undefined" && FIREBASE_EMULATOR);
+    assert.ok(emu || dove.startsWith("http://127.0.0.1:9000"), "pagina non collegata all'emulatore: " + dove);
     return { ctx, page };
   }
 
@@ -94,6 +98,17 @@ function preparaBanco(fileRegole) {
         return res.end(htmlVecchio);
       }
       const file = path.join(ROOT, url === "/" ? "index.html" : url);
+      if (file === path.join(ROOT, "index.html")) {
+        // Un index.html senza supporto all'emulatore (es. il ripristino v6.21) verrebbe collegato al
+        // database VERO: in quel caso si sostituisce l'indirizzo come per la v6.16.
+        let html = fs.readFileSync(file, "utf8");
+        if (!html.includes("FIREBASE_EMULATOR")) {
+          assert.equal(html.split(URL_VERO).length, 2, "indirizzo del database vero non trovato una sola volta");
+          html = html.replace(URL_VERO, URL_EMU);
+        }
+        res.writeHead(200, { "Content-Type": "text/html" });
+        return res.end(html);
+      }
       if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
         res.writeHead(404);
         return res.end();
