@@ -155,6 +155,16 @@
   NON in rubrica, Giuliano), totali vittorie 3 · partite 5 · vinte 3; AUTO-1 bloccata. Proposte in
   `firebase-tests/PROPOSTE-DATI.md`; passi manuali Fasi 1-2 in `firebase-tests/FASI-1-2.md` (NON eseguiti).
 
+## Automazione (PR #26, branch `claude/ci-automatica`, base `claude/riprova`; guida in `.github/AUTOMAZIONE.md`)
+- Workflow `Controlli` su ogni PR e su main: Regole del gioco (+ versioni allineate, versione che sale verso main),
+  Workflow sicuri (`.github/scripts/controlla-workflow.js`), Il sito non pubblica i test, Sicurezza Firebase
+  (emulatore, Playwright 1.56.1 in firebase-tests). Controllo da rendere obbligatorio: **"Tutti i controlli"**.
+- Ciclo di correzione: `.claude/skills/steward/SKILL.md` (max 3 tentativi per errore, 6 push, poi rapporto e stop).
+- Rilascio regole/migrazione: `.github/workflows/rilascio.yml` (solo a mano, da main, PROVA di default, spento finché
+  `PRODUZIONE_ATTIVA` ≠ "si"); strumenti in `firebase-tests/rilascio/`. Segreti SOLO in environment `production`
+  limitato a main (mai repository secrets). Verifica del sito dopo ogni push su main (`verifica-sito.yml`).
+- NON configurato (lo fa l'utente): protezione di main, environment, segreti, variabili, auto-merge.
+
 ## Diritti (v6.09)
 - "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`
   (IT + EN), "© 2026 Mig" in fondo alla home. Negli store: Google Play con nome sviluppatore "Mig"; su Apple

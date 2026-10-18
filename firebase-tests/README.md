@@ -13,7 +13,8 @@ npm install        # una volta sola (installa gli strumenti SOLO qui dentro)
 npm test           # avvia l'emulatore, esegue i test, lo spegne
 ```
 
-Serve Java (11 o più recente) per l'emulatore.
+Serve Java (11 o più recente) per l'emulatore. Gli stessi test girano su GitHub a ogni pull request
+(workflow `Controlli`, job "Sicurezza Firebase (emulatore)").
 
 ### Il sito non pubblica questa cartella
 `_config.yml` (nella radice) dice a GitHub Pages di escludere `firebase-tests/`. Per verificarlo si
@@ -53,6 +54,10 @@ npm run controlla-sito
   quelle proposte. Usano Playwright e Chromium già presenti sul computer (`test/e2e-banco.js`).
 - `test/e2e-riprova.test.js` — v6.22: nuovo tentativo automatico quando la stanza non è in memoria, MAI due
   applicazioni della stessa mossa (fallisce sulla v6.21, passa sulla v6.22).
+- `rilascio/` — strumenti del rilascio (Fasi C-D-E, vedi `../.github/AUTOMAZIONE.md`): `bersaglio.js` (emulatore o
+  produzione, senza ambiguità), `backup.js` (backup cifrato e verificato, `decifra` per il ripristino a mano),
+  `migrazione-legacy.js` (collegamenti della classifica, mai per nome, idempotente), `esegui.js` (rilascio con arresto e
+  ripristino automatico), `confronta-pubblicate.js` (sola lettura). Provati in `test/rilascio.test.js` con dati finti.
 - `migrazione/analizza-classifica.js` — legge un export JSON della console e stampa un resoconto
   (solo lettura, nessun collegamento a Firebase).
 

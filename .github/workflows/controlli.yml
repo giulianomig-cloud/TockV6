@@ -27,10 +27,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: node --test tests/*.test.js
+      - name: APP_VERSION e CACHE_VERSION allineati
+        run: node .github/scripts/controlla-versione.js
+      - name: Verso main, se cambia il gioco la versione deve salire
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: |
+          if git diff --quiet origin/main -- index.html sw.js; then echo "gioco invariato"; exit 0; fi
+          BASE=$(git show origin/main:index.html | grep -o 'APP_VERSION *= *"v[0-9.]*"' | grep -o 'v[0-9.]*')
+          node .github/scripts/controlla-versione.js "$BASE"
 
   workflow:
     name: Workflow sicuri

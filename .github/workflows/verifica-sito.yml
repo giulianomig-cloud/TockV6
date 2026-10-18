@@ -1,0 +1,29 @@
+# Verifica dopo il rilascio del GIOCO: quando main cambia, aspetta che GitHub Pages pubblichi e controlla
+# che il sito mostri la stessa versione di main. Se non succede entro 15 minuti il controllo diventa rosso
+# (GitHub manda una email): si valuta il ripristino (branch claude/ripristino-v621, vedi AUTOMAZIONE.md).
+name: Verifica del sito
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sito:
+    name: Il sito mostra la versione di main
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITO: https://giulianomig-cloud.github.io/TockV6/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node .github/scripts/controlla-versione.js
+      - run: node .github/scripts/verifica-sito.js
