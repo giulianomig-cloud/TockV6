@@ -83,3 +83,20 @@ Per una classifica a prova di imbroglio serve un "arbitro" sul server, prima del
 3. solo il server scrive `leaderboard/` a fine partita (una volta per `gameId`);
 4. eventuale peso diverso per le partite contro i computer.
 Richiede il piano Blaze (a consumo: con pochi giocatori pochi centesimi o zero) e un avviso di spesa.
+
+## Fase 0 — copie e verifiche (SOLO LETTURA)
+
+Le copie le fa l'utente dalla console (Claude non ha accesso al Firebase vero). I file veri restano FUORI dal
+repository (`.gitignore` blocca `*.export.json`, `regole-pubblicate*.json`, `regole-backup*.json`,
+`rapporto-fase0.json`).
+
+```
+node fase0/verifica.js regole-pubblicate.json tock.export.json [cartella-fuori-dal-repo]
+BACKUP_REGOLE=regole-pubblicate.json BACKUP_DATI=tock.export.json npm run fase0-prova
+```
+- `verifica.js`: impronta SHA-256 dei due file, confronto regole reali ↔ repository ↔ transizione (se diverse:
+  uscita con errore = FERMARSI), conteggi di rubrica, profili, classifica (voci vecchie/nuove e totali), stanze,
+  percorsi sconosciuti; scrive `rapporto-fase0.json` fuori dal repository.
+- `prova-ripristino.test.js` (emulatore): il backup è accettato così com'è, l'andata e ritorno
+  backup → transizione → backup restituisce le stesse regole, con il backup la v6.16 fa tutto quello che fa oggi,
+  i dati esportati si ricaricano e si rileggono uguali (solo nell'emulatore).
