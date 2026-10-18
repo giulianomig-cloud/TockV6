@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.15** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.16** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -46,6 +46,11 @@
 - Foglio del 7 (v5.66): mostra SOLO le pedine che possono ricevere almeno un passo in una distribuzione
   valida (`sevenMovableOwnPawns`), anche quando i passi avanzati possono andare al compagno; le righe del
   compagno solo per le sue pedine che possono ricevere i passi avanzati (`sevenMovablePartnerPawns`).
+- 7 diviso (v6.16, segnalato: Blu #3 a 5 dalla base, #4 in casa#1, 6+1 → #3 proseguiva il giro): fra gli ordini
+  possibili delle porzioni `sevenValidateOwnPortions` sceglie quello che porta in casa PIÙ pedine (qui prima #4 in
+  casa#2, poi #3 in casa#1); anche l'etichetta del foglio ("entra in casa") tiene conto delle altre porzioni.
+  Nel registro, "ha superato la propria base senza entrare in casa" ora dice anche "strada in casa chiusa da una tua
+  pedina" o "ha scelto di proseguire il giro" (prima: "motivo non identificato").
 
 ## Tornei
 - TOLTI nella v6 (richiesto dall'utente per semplificare): niente più schermate, link `?torneo=`, linguetta
