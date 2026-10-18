@@ -141,7 +141,7 @@
 - Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
   servizi a pagamento senza ok esplicito; non cancellare né migrare la classifica attuale.
 
-- RIPRISTINO PRONTO (branch `claude/ripristino-v621`, NON pubblicato): gioco della v6.16 con numero v6.22 (mai tornare a
+- RIPRISTINO PRONTO (branch `claude/ripristino-v621`, NON pubblicato): gioco della v6.16 con numero v6.23 (mai tornare a
   "v6.16": i telefoni già su v6.20 vedrebbero gli altri come vecchi). Usare solo se la v6.20 dà problemi.
 
 ## Diritti (v6.09)
