@@ -30,7 +30,10 @@ npm run controlla-sito
   (`../database.rules.json`). Ogni test PASSA quando la falla esiste.
 - `test/migrazione.test.js` — controlla lo script di analisi della classifica su dati finti.
 - `regole/proposte.json` — regole NUOVE proposte (NON pubblicate). `../database.rules.json` resta quello di oggi.
+- `regole/transizione.json` — regole di PASSAGGIO: quelle di oggi + i percorsi nuovi (`profiles/`, `credited/`…),
+  così la versione vecchia e quella nuova del gioco funzionano insieme finché tutti non hanno aggiornato.
 - `test/profili.test.js` — regole proposte per i profili `profiles/<uid>`.
+- `test/classifica.test.js` — classifica "ognuno registra il proprio risultato, una volta per partita".
 - `test/e2e-regole-attuali.test.js` e `test/e2e-regole-proposte.test.js` — il gioco vero in Chromium con più
   "telefoni", collegato all'emulatore (`index.html?emu=1`, funziona solo su localhost), con le regole di oggi e con
   quelle proposte. Usano Playwright e Chromium già presenti sul computer (`test/e2e-banco.js`).
@@ -52,3 +55,21 @@ Obiettivo: **non perdere nulla** e non dover spostare dati.
 4. **Verifica**: prima e dopo, esporti il JSON dalla console e lanci
    `node migrazione/analizza-classifica.js export.json`. I **totali** (vittorie, partite, vinte) delle
    voci vecchie devono restare identici.
+
+## Classifica: cosa protegge e cosa NO (passo 4, v6.19)
+
+Ora (regole proposte):
+- ognuno scrive SOLO `leaderboard/<proprio uid>`, +1 partita per volta, +1 vittoria solo se la sua squadra
+  risulta vincitrice nella stanza;
+- ogni partita ha un `gameId` nuovo (anche la rivincita) e si registra UNA volta: `credited/<stanza>/<gameId>/<uid>`;
+- bisogna essere stati seduti in quella stanza, con la partita finita e con lo stesso `gameId`;
+- le voci vecchie (chiavi che iniziano con `-`) restano intatte e diventano di sola lettura.
+
+LIMITE NOTO (dimostrato dal test "LIMITE NOTO"): lo stato della partita lo scrivono i telefoni dei giocatori.
+Chi è seduto può dichiarare vinta una partita (anche contro i computer, in una stanza tutta sua) e registrarsela.
+Per una classifica a prova di imbroglio serve un "arbitro" sul server, prima del lancio pubblico:
+1. Cloud Function che riceve le mosse e le applica col motore del gioco (le stesse funzioni dei test);
+2. solo il server scrive lo stato della partita, le mani (private) e la vittoria;
+3. solo il server scrive `leaderboard/` a fine partita (una volta per `gameId`);
+4. eventuale peso diverso per le partite contro i computer.
+Richiede il piano Blaze (a consumo: con pochi giocatori pochi centesimi o zero) e un avviso di spesa.

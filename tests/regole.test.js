@@ -354,3 +354,16 @@ test("confronto tra versioni dell'app", () => {
   assert.equal(T.compareAppVersions("v5.30", "v5.30"), 0);
   assert.ok(T.compareAppVersions(true, "v5.29") < 0, "i client vecchi scrivono true: contano come più vecchi");
 });
+
+// ---------------- Classifica (v6.19) ----------------
+
+test("ogni partita ha un identificativo nuovo, anche dopo la rivincita", () => {
+  const a = T.newGameState({}, "manual");
+  const b = T.newGameState({}, "manual");
+  assert.match(a.gameId, /^[a-z0-9]{8,}$/, "solo lettere e cifre: finisce in un percorso del database");
+  assert.notEqual(a.gameId, b.gameId);
+  const prima = a.gameId;
+  T.resetForNewGame(a);
+  assert.match(a.gameId, /^[a-z0-9]{8,}$/);
+  assert.notEqual(a.gameId, prima);
+});

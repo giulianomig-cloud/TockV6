@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.18** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.19** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -121,6 +121,11 @@
   vecchia NON vengono toccate né assegnate. Regole proposte (NON pubblicate) in `firebase-tests/regole/proposte.json`;
   `database.rules.json` resta quello di produzione. `_config.yml` esclude `firebase-tests/` dal sito (verificato con
   Jekyll locale: `npm run controlla-sito`).
+- v6.19 (branch `claude/classifica-uid`): `gameId` in ogni partita (`newGameId`, nuovo anche con la rivincita).
+  `creditMyResult` sostituisce `tryClaimLeaderboardCredit`: ognuno scrive SOLO `leaderboard/<uid>` (+1 partita, +1
+  vittoria se ha vinto) e `credited/<stanza>/<gameId>/<uid>` nello stesso update. LIMITE: la vittoria la dichiarano i
+  telefoni → classifica NON sicura finché non c'è il server (README di firebase-tests). Con le regole di oggi la
+  versione nuova NON registra in classifica: va pubblicata insieme a `regole/transizione.json`.
 - Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
   servizi a pagamento senza ok esplicito; non cancellare né migrare la classifica attuale.
 

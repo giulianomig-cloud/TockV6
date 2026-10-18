@@ -36,7 +36,7 @@ test("Gioca subito con 4 persone: ogni posto ha l'uid del proprio telefono", LIM
   for (const t of tel) await t.ctx.close();
 });
 
-test("Gioca subito con i computer: i bot giocano, la rivincita riparte, la classifica conta", LIMITE, async () => {
+test("Gioca subito con i computer: i bot giocano, la rivincita riparte (classifica: serve almeno la transizione)", LIMITE, async () => {
   const t = await telefono("Elena", { giocatore: { id: "p-elena", nome: "Elena" } });
   await t.page.evaluate(() => startMatchmaking());
   const roomId = await finché(() => t.page.evaluate(() => mm && mm.roomId));
@@ -82,12 +82,12 @@ test("Gioca subito con i computer: i bot giocano, la rivincita riparte, la class
   await t.page.evaluate(() => clearInterval(window.__autoGioca));
   await aspetta(1500);
   await t.page.evaluate(() => updateState(myRoomId, (s) => { s.phase = "finished"; s.winnerTeam = TEAM_OF[myColor]; }));
-  const lb = await finché(async () => {
-    const v = await leggi("leaderboard/p-elena");
-    return v && v.partite ? v : null;
-  });
-  assert.equal(lb.partite, 1);
-  assert.equal(lb.vinte, 1);
+  // Dalla v6.19 ognuno registra il proprio risultato in leaderboard/<uid> + credited/...:
+  // con le regole di OGGI quei percorsi sono chiusi, quindi la classifica non cambia (e il gioco
+  // non si blocca). Per questo vanno pubblicate almeno le regole di transizione insieme al gioco nuovo.
+  await aspetta(3000);
+  assert.equal(await leggi("leaderboard"), null);
+  assert.equal(await leggi("credited"), null);
 
   await t.page.evaluate(() => startNewGame(document.createElement("button")));
   const dopo = await finché(async () => {
