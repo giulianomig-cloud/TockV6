@@ -97,6 +97,9 @@ test.describe("un altro utente NON può prendersi il posto di Vera conoscendo so
   test("Gioca subito: creare il posto di un altro con un uid diverso dal suo", async () => {
     await assertFails(stanza(ladro(), "AUTO-1").child("players/red").set({ name: "Anna", token: "t-a", uid: "L" }));
   });
+  test("creare un posto umano SENZA uid su un colore libero (posto 'bloccato')", async () => {
+    await assertFails(stanza(ladro()).child("players/blue").set({ name: "Fantasma", token: "t-x" }));
+  });
   test("riciclare una stanza AUTO finita mentre qualcuno è ancora collegato", async () => {
     await assertFails(stanza(ladro(), "AUTO-3").set(NUOVA_AUTO));
   });

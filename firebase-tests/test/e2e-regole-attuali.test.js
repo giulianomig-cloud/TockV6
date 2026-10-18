@@ -147,3 +147,24 @@ test("Se il login non è disponibile si gioca come prima (posto senza uid)", LIM
   assert.deepEqual(errori, []);
   await t.ctx.close();
 });
+
+test("Rete di sicurezza delle prove: il database e il login VERI non sono raggiungibili dal browser di prova", LIMITE, async () => {
+  const t = await telefono("Controllo");
+  const esiti = await t.page.evaluate(async () => {
+    const prova = async (u) => { try { await fetch(u, { mode: "no-cors" }); return "raggiunto"; } catch (e) { return "bloccato"; } };
+    const ws = await new Promise((res) => {
+      try {
+        const s = new WebSocket("wss://tock-v6-default-rtdb.europe-west1.firebasedatabase.app/.ws?v=5");
+        s.onopen = () => res("raggiunto");
+        s.onerror = s.onclose = () => res("bloccato");
+        setTimeout(() => res("bloccato"), 5000);
+      } catch (e) { res("bloccato"); }
+    });
+    return {
+      db: await prova("https://tock-v6-default-rtdb.europe-west1.firebasedatabase.app/.json"),
+      login: await prova("https://identitytoolkit.googleapis.com/v1/accounts:signUp"),
+      ws,
+    };
+  });
+  assert.deepEqual(esiti, { db: "bloccato", login: "bloccato", ws: "bloccato" });
+});
