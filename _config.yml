@@ -1,0 +1,4 @@
+# GitHub Pages (Jekyll): cartelle che NON vanno pubblicate sul sito.
+# firebase-tests/ contiene solo i test di sicurezza sull'emulatore locale.
+exclude:
+  - firebase-tests
