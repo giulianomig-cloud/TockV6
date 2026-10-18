@@ -44,6 +44,10 @@ npm run controlla-sito
   stanza con la v6.20.
 - `test/vulnerabilita-regole-transizione.test.js` — gli attacchi con le regole di transizione (cosa RESTA aperto).
 - `DISTRIBUZIONE.md` — procedura di distribuzione, verifiche e ripristino, con la tabella di cosa può fare ogni versione.
+- `FASI-1-2.md` — passi manuali in console per Fase 1 (accesso anonimo) e Fase 2 (regole di transizione), con le
+  prove del simulatore e il ripristino. `PROPOSTE-DATI.md` — proposte per Yaymaris (id della V5) e per AUTO-1.
+- `fase12/dati-finti.js` — dati FINTI con la stessa forma di quelli veri (stanza bloccata, partita in corso, ecc.);
+  `test/fase12-regole.test.js` e `test/e2e-fase12.test.js` — prove delle Fasi 1-2 e della correzione v6.21.
 - `test/e2e-regole-attuali.test.js` e `test/e2e-regole-proposte.test.js` — il gioco vero in Chromium con più
   "telefoni", collegato all'emulatore (`index.html?emu=1`, funziona solo su localhost), con le regole di oggi e con
   quelle proposte. Usano Playwright e Chromium già presenti sul computer (`test/e2e-banco.js`).
@@ -83,3 +87,20 @@ Per una classifica a prova di imbroglio serve un "arbitro" sul server, prima del
 3. solo il server scrive `leaderboard/` a fine partita (una volta per `gameId`);
 4. eventuale peso diverso per le partite contro i computer.
 Richiede il piano Blaze (a consumo: con pochi giocatori pochi centesimi o zero) e un avviso di spesa.
+
+## Fase 0 — copie e verifiche (SOLO LETTURA)
+
+Le copie le fa l'utente dalla console (Claude non ha accesso al Firebase vero). I file veri restano FUORI dal
+repository (`.gitignore` blocca `*.export.json`, `regole-pubblicate*.json`, `regole-backup*.json`,
+`rapporto-fase0.json`).
+
+```
+node fase0/verifica.js regole-pubblicate.json tock.export.json [cartella-fuori-dal-repo]
+BACKUP_REGOLE=regole-pubblicate.json BACKUP_DATI=tock.export.json npm run fase0-prova
+```
+- `verifica.js`: impronta SHA-256 dei due file, confronto regole reali ↔ repository ↔ transizione (se diverse:
+  uscita con errore = FERMARSI), conteggi di rubrica, profili, classifica (voci vecchie/nuove e totali), stanze,
+  percorsi sconosciuti; scrive `rapporto-fase0.json` fuori dal repository.
+- `prova-ripristino.test.js` (emulatore): il backup è accettato così com'è, l'andata e ritorno
+  backup → transizione → backup restituisce le stesse regole, con il backup la v6.16 fa tutto quello che fa oggi,
+  i dati esportati si ricaricano e si rileggono uguali (solo nell'emulatore).

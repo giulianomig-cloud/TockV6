@@ -8101,7 +8101,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.20";
+const APP_VERSION = "v6.21";
 
 let myColor = null;
 let myRoomId = null;
@@ -9798,7 +9798,18 @@ function mmLastActivity(st) {
   return t;
 }
 function mmFingerprint(st) {
-  return st.phase + "|" + (st.turnStartedAt || 0) + "|" + (st.log ? st.log.length : 0);
+  return st.phase + "|" + (st.turnStartedAt || 0) + "|" + (st.log ? st.log.length : 0) + "|" +
+    (st.draft && Array.isArray(st.draft.order) ? st.draft.order.join(",") : "");
+}
+// v6.21: stanza rimasta "in attesa" con le coppie già sorteggiate ma che non può più partire (es. lo
+// stesso giocatore due volte, come AUTO-1): nessun posto al tavolo e nessun segno di vita da 10 minuti.
+// Si ricicla come una partita abbandonata. Non contiene punteggi: si perde solo l'attesa bloccata.
+function mmIsStuckLobby(st) {
+  if (!st || st.roomMode !== "draw" || st.phase !== "lobby" || !st.draft || !st.draft.pairDraw) return false;
+  if (st.players && Object.keys(st.players).length > 0) return false;
+  const seen = Object.values(st.draft.seen || {}).map(Number).filter((n) => n > 0);
+  const last = seen.length ? Math.max(...seen) : 0;
+  return serverNow() - last > MM_ABANDONED_MS;
 }
 // Una partita già cominciata si può riusare solo se nessuno è collegato e
 // (è finita, oppure è ferma da più di MM_ABANDONED_MS).
@@ -9833,7 +9844,7 @@ async function mmFindRoom() {
     for (let i = 0; i < ids.length; i++) {
       const st = states[i];
       if (!st || mmIsWaitingRoom(st)) return { roomId: ids[i], recycle: null };
-      if (mmIsAbandoned(st, presence[i])) return { roomId: ids[i], recycle: mmFingerprint(st) };
+      if (mmIsAbandoned(st, presence[i]) || mmIsStuckLobby(st)) return { roomId: ids[i], recycle: mmFingerprint(st) };
     }
   }
   return null;
@@ -9875,14 +9886,18 @@ async function mmJoinRoom(roomId, recycle, token) {
       if (current === null) st = newGameState({}, "draw");
       else {
         st = normalizeState(JSON.parse(JSON.stringify(current)));
-        if (recycle && st.phase !== "lobby" && mmFingerprint(st) === recycle) st = newGameState({}, "draw");
+        if (recycle && (st.phase !== "lobby" || mmIsStuckLobby(st)) && mmFingerprint(st) === recycle) st = newGameState({}, "draw");
         else if (!(st.draft && st.draft.players && st.draft.players[token]) && !mmIsWaitingRoom(st)) return undefined;
       }
       const d = st.draft;
       mmPruneStale(d, token);
       if (!d.seen) d.seen = {};
       d.seen[token] = serverNow();
-      if (!d.players[token]) d.order.push(token);
+      // v6.21: chi perde la connessione viene tolto da draft.players (onDisconnect) ma restava in
+      // draft.order; al rientro veniva aggiunto una seconda volta (segnalato: AUTO-1 bloccata con
+      // lo stesso giocatore in tutte e due le squadre). Ora l'elenco non ha mai doppioni.
+      d.order = d.order.filter((t, i, a) => a.indexOf(t) === i);
+      if (!d.order.includes(token)) d.order.push(token);
       mmPruneMyDuplicates(d, token);
       d.players[token] = mmUniqueName(d.players, token, myName);
       if (!d.playerIds) d.playerIds = {};
@@ -9907,6 +9922,7 @@ function mmArmDisconnect(roomId, token) {
   base.child("players/" + token).onDisconnect().remove().catch(() => {});
   base.child("playerIds/" + token).onDisconnect().remove().catch(() => {});
   base.child("seen/" + token).onDisconnect().remove().catch(() => {});
+  base.child("uids/" + token).onDisconnect().remove().catch(() => {});
 }
 function mmDisarmDisconnect(roomId, token) {
   if (!roomId || !token) return;
@@ -9914,6 +9930,7 @@ function mmDisarmDisconnect(roomId, token) {
   base.child("players/" + token).onDisconnect().cancel().catch(() => {});
   base.child("playerIds/" + token).onDisconnect().cancel().catch(() => {});
   base.child("seen/" + token).onDisconnect().cancel().catch(() => {});
+  base.child("uids/" + token).onDisconnect().cancel().catch(() => {});
 }
 
 // Segno di vita mentre si aspetta (+ pulizia dei posti fantasma degli altri).
@@ -10435,8 +10452,11 @@ function maybeStartPairDraw(state) {
   const d = state.draft;
   if (!d || d.pairDraw) return;
   if (Object.keys(d.players).length !== 4) return;
-  const tokens = d.order.filter((t) => d.players[t]).slice(0, 4);
-  const shuffled = shuffle(tokens);
+  // v6.21: 4 telefoni DIVERSI anche se l'elenco d'ordine avesse doppioni (o qualcuno mancasse).
+  const tokens = d.order.filter((t, i, a) => d.players[t] && a.indexOf(t) === i);
+  for (const t of Object.keys(d.players)) if (!tokens.includes(t)) tokens.push(t);
+  if (tokens.length < 4) return;
+  const shuffled = shuffle(tokens.slice(0, 4));
   d.pairDraw = { pairs: [[shuffled[0], shuffled[1]], [shuffled[2], shuffled[3]]] };
 }
 

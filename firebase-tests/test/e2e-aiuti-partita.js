@@ -28,4 +28,15 @@ async function sedutoConAmici(page, nome, colore, stanza) {
     await joinManualRoom(stanza);
   }, { nome, colore, stanza });
 }
-module.exports = { autoGioca, fermaAutoGioca, mosseNelRegistro, sedutoConAmici };
+// Come una persona davanti a "La mossa non è stata salvata… Riprova": riprova (fino a 4 volte).
+// Serve subito dopo l'inizio della partita: il gioco stacca e riattacca l'ascolto della stanza e per un
+// attimo Firebase non ha la stanza in memoria (difetto già presente nella v6.16, vedi PROPOSTE-DATI.md).
+async function conRiprova(fn) {
+  for (let i = 1; ; i++) {
+    try { return await fn(); } catch (e) {
+      if (i >= 4 || !/non è stata salvata/.test(String(e && e.message))) throw e;
+      await new Promise((r) => setTimeout(r, 700));
+    }
+  }
+}
+module.exports = { autoGioca, fermaAutoGioca, mosseNelRegistro, sedutoConAmici, conRiprova };
