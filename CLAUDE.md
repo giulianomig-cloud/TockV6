@@ -141,6 +141,9 @@
 - Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
   servizi a pagamento senza ok esplicito; non cancellare né migrare la classifica attuale.
 
+- RIPRISTINO PRONTO (branch `claude/ripristino-v621`, NON pubblicato): gioco della v6.16 con numero v6.21 (mai tornare a
+  "v6.16": i telefoni già su v6.20 vedrebbero gli altri come vecchi). Usare solo se la v6.20 dà problemi.
+
 ## Diritti (v6.09)
 - "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`
   (IT + EN), "© 2026 Mig" in fondo alla home. Negli store: Google Play con nome sviluppatore "Mig"; su Apple
