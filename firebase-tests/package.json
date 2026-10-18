@@ -3,7 +3,7 @@
   "private": true,
   "description": "Solo test delle regole Firebase sull'emulatore locale. NON fa parte del gioco.",
   "scripts": {
-    "test": "firebase emulators:exec --only database,auth --project demo-tock \"node --test test/*.test.js\""
+    "test": "firebase emulators:exec --only database,auth --project demo-tock \"node --test --test-force-exit --test-concurrency=1 test/*.test.js\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
