@@ -15,6 +15,15 @@ npm test           # avvia l'emulatore, esegue i test, lo spegne
 
 Serve Java (11 o più recente) per l'emulatore.
 
+### Il sito non pubblica questa cartella
+`_config.yml` (nella radice) dice a GitHub Pages di escludere `firebase-tests/`. Per verificarlo si
+costruisce il sito in locale con Jekyll (installato solo in `firebase-tests/.gems`):
+
+```
+gem install --no-document --install-dir .gems jekyll:3.10.0 kramdown-parser-gfm webrick   # una volta
+npm run controlla-sito
+```
+
 ## Cosa c'è
 
 - `test/vulnerabilita-regole-attuali.test.js` — dimostra le falle delle regole attuali
