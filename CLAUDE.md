@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.21** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.22** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -135,7 +135,7 @@
   prenotazione colore). Riciclo delle stanze AUTO permesso dalle regole solo se finite/ferme da 10 min e senza presenza.
   LIMITI rimasti (servono Cloud Functions): stato di gioco scrivibile da chi conosce il codice, mani leggibili, vittoria
   dichiarata dai telefoni, chat AUTO libera via codice, versione finta sul proprio colore.
-- Distribuzione prevista: 1) attivare login anonimo in console; 2) pubblicare `regole/transizione.json` + gioco v6.21;
+- Distribuzione prevista: 1) attivare login anonimo in console; 2) pubblicare `regole/transizione.json` + gioco v6.22;
   3) quando tutti hanno aggiornato, pubblicare `regole/proposte.json`. Con le regole di OGGI la v6.20 funziona ma non
   registra la classifica, non salva profili/codici e il "Sono io" da altro telefono non è possibile.
 - Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
@@ -144,7 +144,12 @@
   connessione lo stesso telefono finiva due volte in `draft.order` e in tutte e due le coppie). `draft.order` senza
   doppioni, `maybeStartPairDraw` con 4 telefoni diversi, onDisconnect toglie anche `draft/uids/<token>`,
   `mmIsStuckLobby` = attesa con coppie sorteggiate, senza posti e senza segni di vita da 10 min → riciclata.
-- RIPRISTINO PRONTO (branch `claude/ripristino-v621`, NON pubblicato): gioco della v6.16 con numero v6.22 (mai tornare a
+- v6.22 (branch `claude/riprova`, separato): `updateState` fa al massimo DUE tentativi. Il secondo solo se il primo
+  NON ha scritto nulla (committed false = stanza non in memoria) e la stanza esiste: prima si ascolta la stanza
+  finché arriva (`get()` non basta), poi si riprova; l'ascolto aggiunto si stacca alla fine. Mai due applicazioni
+  della stessa mossa (test `e2e-riprova`). Prima compariva "La mossa non è stata salvata… Riprova" (es. appena
+  partita la partita, quando l'ascolto viene staccato e riattaccato).
+- RIPRISTINO PRONTO (branch `claude/ripristino-v621`, NON pubblicato): gioco della v6.16 con numero v6.23 (mai tornare a
   "v6.16": i telefoni già aggiornati vedrebbero gli altri come vecchi). Il numero deve superare ogni versione pubblicata.
 - Fase 0 FATTA (rapporto in chat): regole pubblicate = `database.rules.json`; classifica 2 voci (Yaymaris id della V5
   NON in rubrica, Giuliano), totali vittorie 3 · partite 5 · vinte 3; AUTO-1 bloccata. Proposte in

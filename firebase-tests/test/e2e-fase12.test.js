@@ -41,10 +41,10 @@ test("v6.16: chi ha una partita in corso (come Yaymaris in AUTO-2) ci rientra e 
   assert.deepEqual(errori, []);
 });
 
-test("v6.21: Gioca subito ricicla la stanza bloccata AUTO-1 (si perde solo l'attesa bloccata)", LIMITE, async () => {
+test("v6.21+: Gioca subito ricicla la stanza bloccata AUTO-1 (si perde solo l'attesa bloccata)", LIMITE, async () => {
   await caricaDati();
   const t = await telefono("Ugo-v621", { giocatore: { id: "-FINTOugo", nome: "Ugo" } });
-  assert.equal(await t.page.evaluate(() => APP_VERSION), "v6.21");
+  assert.ok(await t.page.evaluate(() => compareAppVersions(APP_VERSION, "v6.21") >= 0), "serve la v6.21 o successiva");
   await t.page.evaluate(() => startMatchmaking());
   const roomId = await finché(() => t.page.evaluate(() => mm && mm.roomId));
   assert.equal(roomId, "AUTO-1");

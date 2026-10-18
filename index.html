@@ -6482,56 +6482,72 @@ async function updateState(roomId, mutatorFn) {
   // same instant don't overwrite each other.
   await waitAuth(); // v6.20: con le regole nuove si scrive solo dopo il login (subito, se è già fatto)
   const ref = roomRef(roomId);
-  let caughtError = null;
-  let justWon = false;
-  const result = await ref
-    .transaction((current) => {
-      // `current === null` qui non è una prova affidabile che la stanza
-      // sia sparita: può capitare anche quando questo client semplicemente
-      // non ha ancora quel path in cache locale (es. subito dopo essere
-      // entrati, prima che un ascoltatore stabile l'abbia letto). Si
-      // aborta comunque questo TENTATIVO (Firebase può comunque rifare da
-      // solo la callback con lo stato vero se la scrittura va in
-      // conflitto), ma il verdetto "davvero cancellata" si decide SOLO
-      // dopo, con una lettura diretta indipendente — vedi sotto.
-      if (current === null) return;
-      try {
-        const copy = normalizeState(JSON.parse(JSON.stringify(current)));
-        const wasFinished = !!copy.winnerTeam;
-        mutatorFn(copy);
-        // riflette solo l'ULTIMO tentativo della transazione (in caso di
-        // retry per contesa la callback può girare più volte): se quello che
-        // viene poi davvero confermato è quello che ha fatto scattare la
-        // vittoria, va bene contarlo una volta sola qui sotto.
-        justWon = !wasFinished && !!copy.winnerTeam;
-        return copy;
-      } catch (e) {
-        caughtError = e;
-        return undefined; // abort this transaction attempt
+  // v6.22: al massimo DUE tentativi. Il secondo parte solo se il primo non ha scritto NULLA
+  // (committed === false: la callback ha restituito undefined perché la stanza non era in memoria)
+  // e la stanza esiste davvero, quindi la mossa viene applicata una volta sola. Prima del secondo
+  // tentativo si ascolta la stanza finché arriva (rileggerla con get() non basta: la transazione
+  // usa la memoria degli ascolti); l'ascolto aggiunto si stacca alla fine.
+  let ascoltoTemporaneo = null;
+  try {
+    for (let tentativo = 1; ; tentativo++) {
+      let caughtError = null;
+      let justWon = false;
+      const result = await ref
+        .transaction((current) => {
+          // `current === null` qui non è una prova affidabile che la stanza
+          // sia sparita: può capitare anche quando questo client semplicemente
+          // non ha ancora quel path in cache locale (es. subito dopo essere
+          // entrati, prima che un ascoltatore stabile l'abbia letto). Si
+          // aborta questo TENTATIVO; il verdetto "davvero cancellata" si
+          // decide SOLO dopo, con una lettura diretta indipendente — vedi sotto.
+          if (current === null) return;
+          try {
+            const copy = normalizeState(JSON.parse(JSON.stringify(current)));
+            const wasFinished = !!copy.winnerTeam;
+            mutatorFn(copy);
+            // riflette solo l'ULTIMO tentativo della transazione (in caso di
+            // retry per contesa la callback può girare più volte): se quello che
+            // viene poi davvero confermato è quello che ha fatto scattare la
+            // vittoria, va bene contarlo una volta sola qui sotto.
+            justWon = !wasFinished && !!copy.winnerTeam;
+            return copy;
+          } catch (e) {
+            caughtError = e;
+            return undefined; // abort this transaction attempt
+          }
+        }, undefined, false)
+        .catch((e) => {
+          caughtError = e;
+          return null;
+        });
+      if (caughtError) {
+        console.error("updateState error:", caughtError);
+        throw caughtError;
       }
-    }, undefined, false)
-    .catch((e) => {
-      caughtError = e;
-      return null;
-    });
-  if (caughtError) {
-    console.error("updateState error:", caughtError);
-    throw caughtError;
-  }
-  if (result && result.committed === false) {
-    // La transazione non ha scritto nulla: può essere perché la callback
-    // ha visto `current === null` (stanza davvero cancellata, OPPURE solo
-    // non ancora in cache — vedi sopra) o per un conflitto di scrittura.
-    // Una lettura diretta e indipendente qui toglie ogni ambiguità, invece
-    // di indovinare dal solo esito della transazione.
-    const snap = await ref.get().catch(() => null);
-    if (!snap || !snap.exists()) {
-      throw Object.assign(new Error("Questa stanza non esiste più (forse è stata cancellata)."), { code: "ROOM_MISSING" });
+      if (result && result.committed === false) {
+        // La transazione non ha scritto nulla: la callback ha visto `current === null`
+        // (stanza davvero cancellata, OPPURE solo non ancora in memoria — vedi sopra).
+        // Una lettura diretta e indipendente toglie ogni ambiguità.
+        const snap = await ref.get().catch(() => null);
+        if (!snap || !snap.exists()) {
+          throw Object.assign(new Error("Questa stanza non esiste più (forse è stata cancellata)."), { code: "ROOM_MISSING" });
+        }
+        if (tentativo === 1) {
+          ascoltoTemporaneo = await new Promise((resolve) => {
+            const cb = () => resolve(cb);
+            ref.on("value", cb, () => resolve(cb));
+            setTimeout(() => resolve(cb), 5000);
+          });
+          continue;
+        }
+        throw new Error("La mossa non è stata salvata (transazione non completata). Riprova.");
+      }
+      if (justWon && result && result.committed !== false) incrementStat("gamesFinished");
+      return result;
     }
-    throw new Error("La mossa non è stata salvata (transazione non completata). Riprova.");
+  } finally {
+    if (ascoltoTemporaneo) ref.off("value", ascoltoTemporaneo);
   }
-  if (justWon && result && result.committed !== false) incrementStat("gamesFinished");
-  return result;
 }
 
 </script>
@@ -8101,7 +8117,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.21";
+const APP_VERSION = "v6.22";
 
 let myColor = null;
 let myRoomId = null;

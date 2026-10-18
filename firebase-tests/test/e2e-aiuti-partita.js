@@ -32,6 +32,7 @@ async function sedutoConAmici(page, nome, colore, stanza) {
 // Serve subito dopo l'inizio della partita: il gioco stacca e riattacca l'ascolto della stanza e per un
 // attimo Firebase non ha la stanza in memoria (difetto già presente nella v6.16, vedi PROPOSTE-DATI.md).
 async function conRiprova(fn) {
+  if (process.env.SENZA_RIPROVA) return fn(); // per dimostrare che il gioco ora riprova da solo
   for (let i = 1; ; i++) {
     try { return await fn(); } catch (e) {
       if (i >= 4 || !/non è stata salvata/.test(String(e && e.message))) throw e;

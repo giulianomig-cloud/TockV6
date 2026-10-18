@@ -1,7 +1,7 @@
 # Distribuzione della versione sicura (v6.20 → v6.21) — procedura e ripristino
 
-> Il gioco da pubblicare è la **v6.21** = v6.20 + correzione delle stanze "Gioca subito" bloccate (AUTO-1).
-> La tabella vale uguale per v6.20 e v6.21. Il ripristino usa il numero **v6.22**.
+> Il gioco da pubblicare è la **v6.22** = v6.20 + correzione delle stanze bloccate (v6.21) + nuovo tentativo
+> automatico "Riprova" (v6.22). La tabella vale uguale per v6.20-v6.22. Il ripristino usa il numero **v6.23**.
 
 Niente di questo è stato fatto. Ogni fase si fa **solo con l'ok esplicito** dell'utente.
 Le operazioni in console Firebase le fa l'utente; Claude prepara, controlla e verifica.
@@ -64,21 +64,21 @@ gli amici aggiornano. Va tenuta il meno possibile.
   I percorsi nuovi eventualmente scritti (`profiles/`, `credited/`, `seatKeys/`, `seatClaims/`) restano nel
   database ma con le regole di oggi nessuno li legge né li scrive: non danno fastidio e non serve cancellarli.
 
-## Fase 3 — Gioco v6.21 sul sito
+## Fase 3 — Gioco v6.22 sul sito
 
 - **Cosa:** unire le pull request **in ordine** (1 → 6). GitHub Pages pubblica in qualche minuto.
 - **Verifica:**
-  - in home compare **v6.21**;
+  - in home compare **v6.22**;
   - stanza con gli amici: ⚙️ Impostazioni mostra il 🔑 codice; dal secondo telefono "Sono io" chiede il codice;
     con quello giusto si rientra, con uno sbagliato no;
   - una partita coi computer fino alla fine (o fino alla prima vittoria): compare una voce nuova in classifica;
   - nuovo export JSON + `analizza-classifica.js`: le voci VECCHIE hanno ancora gli stessi totali.
-- **Ripristino:** pubblicare il branch **`claude/ripristino-v621`** (gioco della v6.16 con numero **v6.22**:
+- **Ripristino:** pubblicare il branch **`claude/ripristino-v621`** (gioco della v6.16 con numero **v6.23**:
   il numero deve essere più alto di qualunque versione già pubblicata).
   NON usare "Revert" verso la v6.16: i telefoni già su v6.20 vedrebbero gli altri come "vecchi" e tutti
-  riceverebbero l'avviso "aggiorna" senza fine. Le regole restano quelle di transizione (la v6.22 di ripristino = v6.16 ci
+  riceverebbero l'avviso "aggiorna" senza fine. Le regole restano quelle di transizione (la v6.23 di ripristino = v6.16 ci
   funziona: provato). I dati scritti dalla v6.20/21 (uid nei posti, `gameId`, voci nuove) non danno problemi
-  alla v6.16/v6.22 (provato: la v6.16 legge la classifica mista e gioca nelle stanze con gli uid).
+  alla v6.16/v6.23 (provato: la v6.16 legge la classifica mista e gioca nelle stanze con gli uid).
 
 ## Fase 4 — Attesa che tutti aggiornino
 

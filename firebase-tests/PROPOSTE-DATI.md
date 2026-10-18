@@ -65,7 +65,8 @@ memoria: un'azione fatta proprio in quell'istante (o subito dopo l'ingresso nell
 completata). Riprova". Riprovando funziona. Nelle prove sull'emulatore succedeva circa 2 volte su 3 quando
 l'azione era immediata; una persona di solito tocca un attimo dopo, quindi capita di rado.
 
-**Proposta (NON fatta, da approvare):** in `updateState`, se il primo tentativo trova la stanza "vuota" ma la
+**FATTA nella v6.22 (branch `claude/riprova`, approvata):** in `updateState`, se il primo tentativo trova la stanza "vuota" ma la
 stanza esiste, rileggerla e riprovare UNA volta da solo (invece di mostrare subito "Riprova"). Piccola modifica,
 nessun cambio di regole o di dati; andrebbe con un controllo automatico che riproduce il caso.
-Per ora le prove fanno come una persona (riprovano, `conRiprova`) e premono i pulsanti veri.
+Le prove premono i pulsanti veri; `conRiprova` resta per le versioni precedenti (con `SENZA_RIPROVA=1` si
+dimostra che la v6.22 non ne ha più bisogno). Test dedicati: `test/e2e-riprova.test.js`.

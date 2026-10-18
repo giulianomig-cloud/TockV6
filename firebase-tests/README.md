@@ -51,6 +51,8 @@ npm run controlla-sito
 - `test/e2e-regole-attuali.test.js` e `test/e2e-regole-proposte.test.js` — il gioco vero in Chromium con più
   "telefoni", collegato all'emulatore (`index.html?emu=1`, funziona solo su localhost), con le regole di oggi e con
   quelle proposte. Usano Playwright e Chromium già presenti sul computer (`test/e2e-banco.js`).
+- `test/e2e-riprova.test.js` — v6.22: nuovo tentativo automatico quando la stanza non è in memoria, MAI due
+  applicazioni della stessa mossa (fallisce sulla v6.21, passa sulla v6.22).
 - `migrazione/analizza-classifica.js` — legge un export JSON della console e stampa un resoconto
   (solo lettura, nessun collegamento a Firebase).
 
