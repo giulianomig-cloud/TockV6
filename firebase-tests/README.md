@@ -34,6 +34,11 @@ npm run controlla-sito
   così la versione vecchia e quella nuova del gioco funzionano insieme finché tutti non hanno aggiornato.
 - `test/profili.test.js` — regole proposte per i profili `profiles/<uid>`.
 - `test/classifica.test.js` — classifica "ognuno registra il proprio risultato, una volta per partita".
+- `test/posti.test.js` — posti protetti e codice di rientro: un altro utente che conosce solo il codice della stanza
+  non può prendersi un posto (in nessun modo provato), mentre gioco, computer, Gioca subito e riciclo funzionano.
+- `test/vulnerabilita-regole-proposte.test.js` — le falle di partenza ripetute con le regole proposte
+  (CHIUSA / RIDOTTA / RESTA).
+- `test/e2e-regole-transizione.test.js` — il gioco vero con le regole di transizione.
 - `test/e2e-regole-attuali.test.js` e `test/e2e-regole-proposte.test.js` — il gioco vero in Chromium con più
   "telefoni", collegato all'emulatore (`index.html?emu=1`, funziona solo su localhost), con le regole di oggi e con
   quelle proposte. Usano Playwright e Chromium già presenti sul computer (`test/e2e-banco.js`).

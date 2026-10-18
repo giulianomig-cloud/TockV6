@@ -71,6 +71,24 @@
           }
         }
       }
+    },
+    "seatKeys": {
+      "$room": {
+        "$color": {
+          ".read": "auth != null && data.child('uid').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($room).child('players').child($color).child('uid').val() === auth.uid",
+          ".validate": "newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val().length >= 6 && newData.child('key').val().length <= 12"
+        }
+      }
+    },
+    "seatClaims": {
+      "$room": {
+        "$color": {
+          ".read": false,
+          ".write": "auth != null && newData.exists()",
+          ".validate": "newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val() === root.child('seatKeys').child($room).child($color).child('key').val()"
+        }
+      }
     }
   }
 }
