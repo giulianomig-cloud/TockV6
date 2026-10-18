@@ -4057,6 +4057,12 @@ function isSeven(card) { return rankOf(card) === "7"; }
 // pos >= 1000 -> 1000+home-cell-index (0..3)
 // ------------------------------------------------------------
 
+// Identificativo di una singola partita (v6.19): serve alla classifica per
+// registrare ogni risultato una volta sola. Solo lettere e cifre (va in un percorso).
+function newGameId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
 function newGameState(playersByColor, roomMode) {
   const hands = {}, pawns = {};
   for (const c of COLORS) {
@@ -4064,6 +4070,7 @@ function newGameState(playersByColor, roomMode) {
     pawns[c] = [-1, -1, -1, -1];
   }
   return {
+    gameId: newGameId(),
     phase: "lobby",
     players: playersByColor,
     // "manual" = ognuno sceglie subito il proprio colore (comportamento
@@ -5223,6 +5230,7 @@ function checkWin(state) {
 // Starts a fresh game in the same room, keeping the same players/names —
 // used by the "nuova partita" button on the win screen.
 function resetForNewGame(state) {
+  state.gameId = newGameId(); // nuova partita = nuovo identificativo (classifica, v6.19)
   for (const c of COLORS) {
     state.pawns[c] = [-1, -1, -1, -1];
     state.hands[c] = [];
@@ -5232,7 +5240,7 @@ function resetForNewGame(state) {
   state.log = ["Nuova partita nella stessa stanza."];
   state.winnerTeam = null;
   // Segni "vittoria già accreditata in classifica" (vedi
-  // tryClaimLeaderboardCredit): vanno azzerati
+  // creditMyResult; dalla v6.19 conta gameId, nuovo a ogni partita): vanno azzerati
   // a ogni rivincita, altrimenti dalla 2ª partita nella stessa stanza in poi
   // nessuna vittoria veniva più contata (segnalato: "Francesco ha vinto due
   // partite e non risulta").
@@ -6195,53 +6203,47 @@ function leaderboardRef() {
   return db.ref("leaderboard");
 }
 
-// Quando una partita finisce, esattamente UN client deve accreditare la
-// vittoria ai due giocatori della squadra vincitrice — ma tutti e 4 i
-// device collegati alla stanza vedono la transizione a "finished" più o
-// meno nello stesso momento (ognuno con il proprio ascoltatore realtime),
-// quindi serve un modo per far sì che uno solo di loro esegua davvero
-// l'incremento. Si usa un piccolo "flag di reclamo" dentro la stanza
-// stessa (games/{roomId}/leaderboardClaimed), scritto con una sua propria
-// transazione: la transazione riesce (committed:true) SOLO per il primo
-// client che la esegue mentre il flag è ancora assente — a tutti gli
-// altri Firebase la nega (il valore corrente non è più quello atteso),
-// quindi solo il "vincitore" del reclamo procede a scrivere la classifica.
-// Niente a che vedere con la transazione che applica le mosse di gioco:
-// sono percorsi Firebase separati (games/{roomId} vs leaderboard/...), non
-// si può renderli atomici insieme, ma non serve — basta che l'incremento
-// avvenga una volta sola, non che sia nello stesso istante della mossa.
-async function tryClaimLeaderboardCredit(state) {
+// Classifica (v6.19): a fine partita OGNI telefono registra SOLO il proprio
+// risultato in leaderboard/<uid>, una volta per partita: il segno
+// credited/<stanza>/<gameId>/<uid> si scrive insieme alla classifica (nello
+// stesso update) e le regole proposte non lo lasciano riscrivere. Le voci vecchie
+// (chiavi della rubrica, iniziano con "-") non vengono più toccate.
+// LIMITE NOTO: chi ha vinto lo dice ancora il telefono (lo stato della partita è
+// scritto dai giocatori). Finché non c'è un controllo sul server (Cloud Functions)
+// la classifica NON è a prova di imbroglio: vedi firebase-tests/README.md.
+// Chi esce prima della fine viene contato quando riapre la partita finita.
+async function creditMyResult(state) {
   if (!state || !state.winnerTeam || !myRoomId) return;
+  const uid = await waitAuth();
+  if (!uid) return;
+  const color = COLORS.find((c) => state.players[c] && !state.players[c].isBot && state.players[c].uid === uid);
+  if (!color) return; // non sono seduto con questo uid (o sono un computer)
+  const room = myRoomId;
   try {
-    const claimResult = await roomRef(myRoomId)
-      .child("leaderboardClaimed")
-      .transaction((cur) => (cur ? undefined : true));
-    if (!claimResult.committed) return; // già reclamato da un altro device
-    const winners = COLORS.filter((c) => TEAM_OF[c] === state.winnerTeam);
-    const updates = {};
-    for (const c of winners) {
-      const p = state.players && state.players[c];
-      if (!p || p.isBot || !p.playerId) continue; // bot e giocatori senza rubrica non entrano in classifica
-      updates["leaderboard/" + p.playerId + "/vittorie"] = firebase.database.ServerValue.increment(1);
-      updates["leaderboard/" + p.playerId + "/nome"] = p.name; // tiene il nome visualizzato aggiornato
+    let gameId = state.gameId;
+    if (!gameId) {
+      // stanza creata da una versione precedente: le si dà ora un identificativo
+      const res = await roomRef(room).child("gameId").transaction((cur) => cur || newGameId(), undefined, false);
+      gameId = res && res.snapshot && res.snapshot.val();
+      if (!gameId) return;
     }
-    // Media vittorie/partite: si contano le partite giocate da TUTTI i
-    // giocatori veri (anche chi ha perso). `partite` e `vinte` partono da zero
-    // da quando esistono — `vittorie` invece include anche le vittorie di prima,
-    // quando le partite giocate non venivano contate: per questo la media usa
-    // solo questi due campi, non `vittorie`.
-    for (const c of COLORS) {
-      const p = state.players && state.players[c];
-      if (!p || p.isBot || !p.playerId) continue;
-      updates["leaderboard/" + p.playerId + "/partite"] = firebase.database.ServerValue.increment(1);
-      updates["leaderboard/" + p.playerId + "/nome"] = p.name;
-      if (TEAM_OF[c] === state.winnerTeam) {
-        updates["leaderboard/" + p.playerId + "/vinte"] = firebase.database.ServerValue.increment(1);
-      }
-    }
-    if (Object.keys(updates).length > 0) await db.ref().update(updates);
+    const mark = "credited/" + room + "/" + gameId + "/" + uid;
+    if ((await db.ref(mark).get()).exists()) return; // già registrata
+    const cur = (await db.ref("leaderboard/" + uid).get()).val() || {};
+    const won = TEAM_OF[color] === state.winnerTeam ? 1 : 0;
+    await db.ref().update({
+      [mark]: true,
+      ["leaderboard/" + uid]: {
+        nome: String(state.players[color].name || "?").slice(0, 60),
+        partite: (cur.partite || 0) + 1,
+        vinte: (cur.vinte || 0) + won,
+        vittorie: (cur.vittorie || 0) + won,
+        ultimaStanza: room,
+        ultimaPartita: gameId,
+      },
+    });
   } catch (e) {
-    console.error(e);
+    console.warn("risultato non registrato in classifica:", e && (e.code || e.message));
   }
 }
 
@@ -8052,7 +8054,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.18";
+const APP_VERSION = "v6.19";
 
 let myColor = null;
 let myRoomId = null;
@@ -13308,7 +13310,7 @@ function onStateChange(state) {
     }, Math.max(0, (_winCelebrateUntil || 0) - Date.now()));
     if (!_leaderboardClaimAttempted) {
       _leaderboardClaimAttempted = true;
-      tryClaimLeaderboardCredit(state).catch(() => {});
+      creditMyResult(state).catch(() => {});
     }
   } else {
     _leaderboardClaimAttempted = false;

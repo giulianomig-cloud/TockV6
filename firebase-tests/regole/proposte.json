@@ -26,8 +26,30 @@
     },
     "leaderboard": {
       ".read": true,
-      "$id": {
-        ".write": true
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        ".validate": "newData.hasChildren(['nome', 'partite', 'vinte', 'vittorie', 'ultimaStanza', 'ultimaPartita']) && ((root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('red').child('uid').val() === auth.uid || root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('yellow').child('uid').val() === auth.uid) || (root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('green').child('uid').val() === auth.uid || root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('blue').child('uid').val() === auth.uid)) && root.child('games').child(newData.child('ultimaStanza').val()).child('phase').val() === 'finished' && root.child('games').child(newData.child('ultimaStanza').val()).child('gameId').val() === newData.child('ultimaPartita').val() && newData.parent().parent().child('credited').child(newData.child('ultimaStanza').val()).child(newData.child('ultimaPartita').val()).child($uid).val() === true && !root.child('credited').child(newData.child('ultimaStanza').val()).child(newData.child('ultimaPartita').val()).child($uid).exists() && ((!data.exists() && newData.child('partite').val() === 1) || (data.exists() && newData.child('partite').val() === data.child('partite').val() + 1)) && ((((root.child('games').child(newData.child('ultimaStanza').val()).child('winnerTeam').val() === 'A' && (root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('red').child('uid').val() === auth.uid || root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('yellow').child('uid').val() === auth.uid)) || (root.child('games').child(newData.child('ultimaStanza').val()).child('winnerTeam').val() === 'B' && (root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('green').child('uid').val() === auth.uid || root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('blue').child('uid').val() === auth.uid))) && ((!data.exists() && newData.child('vinte').val() === 1) || (data.exists() && newData.child('vinte').val() === data.child('vinte').val() + 1)) && ((!data.exists() && newData.child('vittorie').val() === 1) || (data.exists() && newData.child('vittorie').val() === data.child('vittorie').val() + 1))) || (!((root.child('games').child(newData.child('ultimaStanza').val()).child('winnerTeam').val() === 'A' && (root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('red').child('uid').val() === auth.uid || root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('yellow').child('uid').val() === auth.uid)) || (root.child('games').child(newData.child('ultimaStanza').val()).child('winnerTeam').val() === 'B' && (root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('green').child('uid').val() === auth.uid || root.child('games').child(newData.child('ultimaStanza').val()).child('players').child('blue').child('uid').val() === auth.uid))) && ((!data.exists() && newData.child('vinte').val() === 0) || (data.exists() && newData.child('vinte').val() === data.child('vinte').val() + 0)) && ((!data.exists() && newData.child('vittorie').val() === 0) || (data.exists() && newData.child('vittorie').val() === data.child('vittorie').val() + 0))))",
+        "nome": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60"
+        },
+        "partite": {
+          ".validate": "newData.isNumber()"
+        },
+        "vinte": {
+          ".validate": "newData.isNumber()"
+        },
+        "vittorie": {
+          ".validate": "newData.isNumber()"
+        },
+        "ultimaStanza": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "ultimaPartita": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "$altro": {
+          ".validate": false
+        }
       }
     },
     "codes": {
@@ -58,6 +80,17 @@
         },
         "$altro": {
           ".validate": false
+        }
+      }
+    },
+    "credited": {
+      "$room": {
+        "$game": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid && !data.exists()",
+            ".validate": "newData.val() === true && newData.parent().parent().parent().parent().child('leaderboard').child($uid).child('ultimaPartita').val() === $game && newData.parent().parent().parent().parent().child('leaderboard').child($uid).child('ultimaStanza').val() === $room"
+          }
         }
       }
     }

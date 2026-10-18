@@ -1,0 +1,76 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "games": {
+      "$room": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "presence": {
+      "$room": {
+        ".read": true,
+        "$color": {
+          "$conn": {
+            ".write": true
+          }
+        }
+      }
+    },
+    "players": {
+      ".read": true,
+      "$id": {
+        ".write": "!data.exists()"
+      }
+    },
+    "leaderboard": {
+      ".read": true,
+      "$id": {
+        ".write": true
+      }
+    },
+    "codes": {
+      "$code": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "stats": {
+      "$name": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "profiles": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChild('nome')",
+        "nome": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+        },
+        "creatoIl": {
+          ".validate": "newData.isNumber()"
+        },
+        "aggiornatoIl": {
+          ".validate": "newData.isNumber()"
+        },
+        "$altro": {
+          ".validate": false
+        }
+      }
+    },
+    "credited": {
+      "$room": {
+        "$game": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid && !data.exists()",
+            ".validate": "newData.val() === true"
+          }
+        }
+      }
+    }
+  }
+}
