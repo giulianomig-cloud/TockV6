@@ -78,6 +78,7 @@ function preparaBanco(fileRegole) {
     aperti.push(ctx);
     const page = await ctx.newPage();
     page.on("pageerror", (e) => errori.push(`[${nome}] ${e.message}`));
+    if (process.env.DEBUG_E2E) page.on("console", (m) => console.log(`[${nome}] ${m.type()}: ${m.text().slice(0, 300)}`));
     await page.goto(vecchia ? `${base}/index-v616.html` : `${base}/index.html?emu=1`);
     await page.waitForFunction(() => typeof db !== "undefined" && db);
     const versione = await page.evaluate(() => APP_VERSION);

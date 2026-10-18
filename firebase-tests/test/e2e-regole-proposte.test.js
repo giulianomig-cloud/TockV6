@@ -2,6 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { conRiprova } = require("./e2e-aiuti-partita");
 
 const { telefono, errori } = preparaBanco("../regole/proposte.json");
 
@@ -46,7 +47,7 @@ test("Passo 3: ogni telefono ha il suo profilo; stesso nome = due profili; i dat
 async function partitaColComputer(t) {
   await t.page.evaluate(() => startMatchmaking());
   const roomId = await finché(() => t.page.evaluate(() => mm && mm.roomId));
-  await t.page.evaluate(() => mmFillWithBots("easy", null));
+  await t.page.click(".mm-bot-btns button >> nth=0"); // "🤖 Normale", come una persona: compare solo a stanza ricevuta
   await finché(async () => {
     const s = await leggi(`games/${roomId}`);
     return s && s.players && Object.keys(s.players).length === 4 && s.phase !== "lobby";
@@ -55,10 +56,10 @@ async function partitaColComputer(t) {
   return roomId;
 }
 const finisci = (t, vinco) =>
-  t.page.evaluate((v) => updateState(myRoomId, (s) => {
+  conRiprova(() => t.page.evaluate((v) => updateState(myRoomId, (s) => {
     s.phase = "finished";
     s.winnerTeam = v ? TEAM_OF[myColor] : TEAM_OF[myColor] === "A" ? "B" : "A";
-  }), vinco);
+  }), vinco));
 
 test("Passo 4: a fine partita ognuno registra il PROPRIO risultato, una volta sola; rivincita = partita nuova", LIMITE, async () => {
   await scrivi("leaderboard", VECCHI.leaderboard);

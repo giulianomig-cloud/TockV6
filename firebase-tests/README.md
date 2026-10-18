@@ -44,6 +44,10 @@ npm run controlla-sito
   stanza con la v6.20.
 - `test/vulnerabilita-regole-transizione.test.js` — gli attacchi con le regole di transizione (cosa RESTA aperto).
 - `DISTRIBUZIONE.md` — procedura di distribuzione, verifiche e ripristino, con la tabella di cosa può fare ogni versione.
+- `FASI-1-2.md` — passi manuali in console per Fase 1 (accesso anonimo) e Fase 2 (regole di transizione), con le
+  prove del simulatore e il ripristino. `PROPOSTE-DATI.md` — proposte per Yaymaris (id della V5) e per AUTO-1.
+- `fase12/dati-finti.js` — dati FINTI con la stessa forma di quelli veri (stanza bloccata, partita in corso, ecc.);
+  `test/fase12-regole.test.js` e `test/e2e-fase12.test.js` — prove delle Fasi 1-2 e della correzione v6.21.
 - `test/e2e-regole-attuali.test.js` e `test/e2e-regole-proposte.test.js` — il gioco vero in Chromium con più
   "telefoni", collegato all'emulatore (`index.html?emu=1`, funziona solo su localhost), con le regole di oggi e con
   quelle proposte. Usano Playwright e Chromium già presenti sul computer (`test/e2e-banco.js`).

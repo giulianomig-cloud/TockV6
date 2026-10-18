@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { conRiprova } = require("./e2e-aiuti-partita");
 
 const { telefono, errori } = preparaBanco("../regole/transizione.json");
 
@@ -27,7 +28,7 @@ test("Transizione: profilo, codice di rientro, 'Sono io' col codice e classifica
   await finché(() => b.page.evaluate(() => !!(currentState && myColor === "red"))); // il telefono ha caricato la stanza
 
   // classifica: fine partita simulata dal telefono che ora siede
-  await b.page.evaluate(() => updateState(myRoomId, (s) => { s.phase = "finished"; s.winnerTeam = TEAM_OF[myColor]; }));
+  await conRiprova(() => b.page.evaluate(() => updateState(myRoomId, (s) => { s.phase = "finished"; s.winnerTeam = TEAM_OF[myColor]; })));
   const v = await finché(async () => { const x = await leggi(`leaderboard/${uidB}`); return x && x.partite === 1 ? x : null; });
   assert.equal(v.vinte, 1);
   assert.deepEqual(await leggi("leaderboard/-vecchioAnna"), { nome: "Anna", vittorie: 12, partite: 20, vinte: 12 });

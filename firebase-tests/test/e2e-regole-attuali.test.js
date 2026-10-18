@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { conRiprova } = require("./e2e-aiuti-partita");
 
 const { telefono, errori } = preparaBanco("../../database.rules.json");
 
@@ -40,7 +41,7 @@ test("Gioca subito con i computer: i bot giocano, la rivincita riparte (classifi
   const t = await telefono("Elena", { giocatore: { id: "p-elena", nome: "Elena" } });
   await t.page.evaluate(() => startMatchmaking());
   const roomId = await finché(() => t.page.evaluate(() => mm && mm.roomId));
-  await t.page.evaluate(() => mmFillWithBots("easy", null));
+  await t.page.click(".mm-bot-btns button >> nth=0"); // "🤖 Normale", come una persona: compare solo a stanza ricevuta
   const uid = await t.page.evaluate(() => myUid);
   assert.ok(uid);
 
@@ -81,7 +82,7 @@ test("Gioca subito con i computer: i bot giocano, la rivincita riparte (classifi
   // Fine partita simulata (solo nell'emulatore), poi rivincita come col pulsante.
   await t.page.evaluate(() => clearInterval(window.__autoGioca));
   await aspetta(1500);
-  await t.page.evaluate(() => updateState(myRoomId, (s) => { s.phase = "finished"; s.winnerTeam = TEAM_OF[myColor]; }));
+  await conRiprova(() => t.page.evaluate(() => updateState(myRoomId, (s) => { s.phase = "finished"; s.winnerTeam = TEAM_OF[myColor]; })));
   // Dalla v6.19 ognuno registra il proprio risultato in leaderboard/<uid> + credited/...:
   // con le regole di OGGI quei percorsi sono chiusi, quindi la classifica non cambia (e il gioco
   // non si blocca). Per questo vanno pubblicate almeno le regole di transizione insieme al gioco nuovo.
@@ -135,7 +136,7 @@ test("Se il login non è disponibile si gioca come prima (posto senza uid)", LIM
   await t.page.evaluate(() => startMatchmaking());
   const roomId = await finché(() => t.page.evaluate(() => mm && mm.roomId));
   assert.ok(Date.now() - prima < 8000, "l'attesa del login non deve bloccare l'ingresso");
-  await t.page.evaluate(() => mmFillWithBots("hard", null));
+  await t.page.click(".mm-bot-btns button >> nth=1"); // "🤖 Difficile"
   const s = await finché(async () => {
     const st = await leggi(`games/${roomId}`);
     return st && st.players && Object.keys(st.players).length === 4 ? st : null;
