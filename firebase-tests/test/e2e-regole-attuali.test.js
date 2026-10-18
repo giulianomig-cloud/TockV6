@@ -100,7 +100,7 @@ test("Gioca subito con i computer: i bot giocano, la rivincita riparte (classifi
   await t.ctx.close();
 });
 
-test("Con gli amici: il posto ha l'uid; 'Sono io' da un altro telefono lo passa al nuovo uid (comportamento di oggi)", LIMITE, async () => {
+test("Con gli amici: il posto ha l'uid; 'Sono io' da un altro telefono chiede il codice di rientro", LIMITE, async () => {
   const a = await telefono("Fabio");
   await a.page.evaluate(async () => {
     document.body.insertAdjacentHTML("beforeend", '<input id="name-input" value="Fabio">');
@@ -114,21 +114,19 @@ test("Con gli amici: il posto ha l'uid; 'Sono io' da un altro telefono lo passa 
     return s && s.players && s.players.red ? s : null;
   });
   assert.equal(s1.players.red.uid, uidA);
-  assert.equal(s1.players.red.name, "Fabio");
-
+  // Con le regole di OGGI il codice di rientro non si può salvare (seatKeys/ è chiuso):
+  // niente codice nelle Impostazioni e niente "Sono io" da un altro telefono finché non si
+  // pubblicano almeno le regole di transizione. Il posto non passa a chi non ha il codice.
+  await aspetta(1500);
+  assert.equal(await a.page.evaluate(() => mySeatKey), null);
   const b = await telefono("Fabio-2");
+  let chiesto = false;
+  b.page.on("dialog", (d) => { chiesto = true; d.accept("ABCDEF"); });
   await b.page.evaluate(() => recoverByName("AMICI1", "Fabio", null));
-  const uidB = await b.page.evaluate(() => myUid);
-  assert.notEqual(uidA, uidB);
-  const s2 = await finché(async () => {
-    const s = await leggi("games/AMICI1");
-    return s.players.red.uid === uidB ? s : null;
-  });
-  // Oggi chiunque può farlo: sarà il passo 5 a permetterlo solo se il titolare è offline.
-  assert.equal(s2.players.red.name, "Fabio");
+  await aspetta(1500);
+  assert.ok(chiesto, "il codice di rientro viene chiesto");
+  assert.equal((await leggi("games/AMICI1")).players.red.uid, uidA, "il posto resta a Fabio");
   assert.deepEqual(errori, []);
-  await a.ctx.close();
-  await b.ctx.close();
 });
 
 test("Se il login non è disponibile si gioca come prima (posto senza uid)", LIMITE, async () => {
@@ -148,4 +146,25 @@ test("Se il login non è disponibile si gioca come prima (posto senza uid)", LIM
   assert.equal(await t.page.evaluate(() => myUid), null);
   assert.deepEqual(errori, []);
   await t.ctx.close();
+});
+
+test("Rete di sicurezza delle prove: il database e il login VERI non sono raggiungibili dal browser di prova", LIMITE, async () => {
+  const t = await telefono("Controllo");
+  const esiti = await t.page.evaluate(async () => {
+    const prova = async (u) => { try { await fetch(u, { mode: "no-cors" }); return "raggiunto"; } catch (e) { return "bloccato"; } };
+    const ws = await new Promise((res) => {
+      try {
+        const s = new WebSocket("wss://tock-v6-default-rtdb.europe-west1.firebasedatabase.app/.ws?v=5");
+        s.onopen = () => res("raggiunto");
+        s.onerror = s.onclose = () => res("bloccato");
+        setTimeout(() => res("bloccato"), 5000);
+      } catch (e) { res("bloccato"); }
+    });
+    return {
+      db: await prova("https://tock-v6-default-rtdb.europe-west1.firebasedatabase.app/.json"),
+      login: await prova("https://identitytoolkit.googleapis.com/v1/accounts:signUp"),
+      ws,
+    };
+  });
+  assert.deepEqual(esiti, { db: "bloccato", login: "bloccato", ws: "bloccato" });
 });

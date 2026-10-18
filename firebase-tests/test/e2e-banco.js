@@ -37,12 +37,28 @@ async function finché(cond, ms = 20000, passo = 250) {
   throw new Error("tempo scaduto in attesa della condizione");
 }
 
+// Versione VECCHIA del gioco (v6.16, commit del checkpoint): non conosce l'emulatore, quindi
+// il suo index.html viene servito con databaseURL sostituito da quello dell'emulatore.
+const COMMIT_V616 = "c89c66d";
+const URL_VERO = 'databaseURL: "https://tock-v6-default-rtdb.europe-west1.firebasedatabase.app"';
+const URL_EMU = `databaseURL: "http://127.0.0.1:9000?ns=${NS}"`;
+function indexVecchio() {
+  const html = execSync(`git -C "${ROOT}" show ${COMMIT_V616}:index.html`, { maxBuffer: 64 * 1024 * 1024 }).toString();
+  assert.equal(html.split(URL_VERO).length, 2, "indirizzo del database vero non trovato una sola volta");
+  const out = html.replace(URL_VERO, URL_EMU);
+  assert.ok(!/firebasedatabase\.app|firebaseio\.com/.test(out), "nella pagina vecchia è rimasto un indirizzo del database vero");
+  assert.match(out, /const APP_VERSION = "v6\.16"/);
+  return out;
+}
+
+// telefono(nome, { vecchia: true }) apre il gioco v6.16 (servito come /index-v616.html).
 function preparaBanco(fileRegole) {
   let server, base, browser;
+  const htmlVecchio = indexVecchio();
   const errori = [];
   const aperti = []; // telefoni aperti nella prova in corso: si chiudono sempre, anche se la prova fallisce
 
-  async function telefono(nome, { senzaLogin = false, giocatore = null } = {}) {
+  async function telefono(nome, { senzaLogin = false, giocatore = null, vecchia = false } = {}) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block", locale: "it-IT" });
     // Gli script Firebase arrivano dal pacchetto locale (stessa versione 10.12.2), non da internet.
     await ctx.route(/gstatic\.com\/firebasejs\/[^/]+\/(firebase-[a-z]+-compat\.js)/, (r) => {
@@ -50,6 +66,11 @@ function preparaBanco(fileRegole) {
       r.fulfill({ path: path.join(FB, file), contentType: "application/javascript" });
     });
     await ctx.route(/fonts\.googleapis|fonts\.gstatic/, (r) => r.abort());
+    // Rete di sicurezza: NIENTE può raggiungere il database o il login veri.
+    // (si guarda il NOME DEL SERVER: il login dell'emulatore ha "identitytoolkit" solo nel percorso)
+    const vero = (u) => /(^|\.)(firebasedatabase\.app|firebaseio\.com)$|^(identitytoolkit|securetoken)\.googleapis\.com$/.test(u.hostname);
+    await ctx.route(vero, (r) => r.abort());
+    await ctx.routeWebSocket(vero, (ws) => ws.close());
     if (senzaLogin) await ctx.route(/127\.0\.0\.1:9099/, (r) => r.abort());
     const init = [`localStorage.setItem("tock-hide-a2hs","1");`];
     if (giocatore) init.push(`localStorage.setItem("tock-player", ${JSON.stringify(JSON.stringify(giocatore))});`);
@@ -57,15 +78,37 @@ function preparaBanco(fileRegole) {
     aperti.push(ctx);
     const page = await ctx.newPage();
     page.on("pageerror", (e) => errori.push(`[${nome}] ${e.message}`));
-    await page.goto(`${base}/index.html?emu=1`);
+    await page.goto(vecchia ? `${base}/index-v616.html` : `${base}/index.html?emu=1`);
     await page.waitForFunction(() => typeof db !== "undefined" && db);
+    const versione = await page.evaluate(() => APP_VERSION);
+    if (vecchia) assert.equal(versione, "v6.16");
+    else assert.notEqual(versione, "v6.16");
+    // la pagina deve parlare con l'emulatore, mai col database vero
+    const dove = await page.evaluate(() => (db && db.app && db.app.options && db.app.options.databaseURL) || "");
+    const emu = await page.evaluate(() => typeof FIREBASE_EMULATOR !== "undefined" && FIREBASE_EMULATOR);
+    assert.ok(emu || dove.startsWith("http://127.0.0.1:9000"), "pagina non collegata all'emulatore: " + dove);
     return { ctx, page };
   }
 
   test.before(async () => {
     server = http.createServer((req, res) => {
       const url = decodeURIComponent(req.url.split("?")[0]);
+      if (url === "/index-v616.html") {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        return res.end(htmlVecchio);
+      }
       const file = path.join(ROOT, url === "/" ? "index.html" : url);
+      if (file === path.join(ROOT, "index.html")) {
+        // Un index.html senza supporto all'emulatore (es. il ripristino v6.21) verrebbe collegato al
+        // database VERO: in quel caso si sostituisce l'indirizzo come per la v6.16.
+        let html = fs.readFileSync(file, "utf8");
+        if (!html.includes("FIREBASE_EMULATOR")) {
+          assert.equal(html.split(URL_VERO).length, 2, "indirizzo del database vero non trovato una sola volta");
+          html = html.replace(URL_VERO, URL_EMU);
+        }
+        res.writeHead(200, { "Content-Type": "text/html" });
+        return res.end(html);
+      }
       if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
         res.writeHead(404);
         return res.end();

@@ -1273,6 +1273,8 @@ html:not([data-skin="arcade"]) #picker-wrap:has(.sx-box) { background: var(--bx-
 .sx-k4, .sx-k4 * { color: #3A2A55; } .sx-k4 { background: linear-gradient(160deg,#EAF4FF,#F7F1FF 55%,#FFE7D2); }
 .sx-k5, .sx-k5 * { color: #7CF7FF; } .sx-k5 { background: #120A3A; box-shadow: inset 0 0 0 2px #FF2BD6, var(--bx-shadow); }
 .sx-list { background: var(--bx-card); border-radius: 22px; box-shadow: var(--bx-shadow); overflow: hidden; }
+.sx-keylist { margin-top: 12px; }
+.sx-key { font-weight: 800; letter-spacing: .14em; color: var(--bx-ink); white-space: nowrap; }
 .sx-list .set-row { border-top: 1px solid var(--bx-line); }
 .sx-list .set-row:first-child { border-top: none; }
 .sx-acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -5366,6 +5368,10 @@ function trColors(s) {
 }
 
 const I18N_EN = {
+  // --- Codice di rientro (v6.20) ---
+  "Per riprendere il posto serve il codice di rientro: lo trova chi era seduto qui, sul suo telefono, in ⚙️ Impostazioni.": "To take back this seat you need the rejoin code: whoever was sitting here can find it on their phone under ⚙️ Settings.",
+  "Codice di rientro sbagliato.": "Wrong rejoin code.",
+  "Codice per rientrare da un altro telefono": "Code to rejoin from another phone",
   // --- Home ---
   "Pronto per": "Ready for",
   "una partita?": "a game?",
@@ -6171,6 +6177,44 @@ function savePlayerShortcut(id, nome) {
   saveMyProfile(nome);
 }
 
+// ---------------- Codice di rientro del proprio posto (v6.20) ---------
+// seatKeys/<stanza>/<colore> = { uid, key }: lo legge SOLO chi siede su quel posto
+// (Impostazioni → "🔑"). Per riprendere il posto da un ALTRO telefono ("Sono io")
+// bisogna scriverlo: senza codice le regole non lasciano cambiare il posto di un
+// altro, anche conoscendo il codice della stanza.
+const SEAT_KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // niente 0/O, 1/I: si leggono male
+let mySeatKey = null;
+let _seatKeyFor = null;
+function newSeatKey() {
+  const a = new Uint32Array(6);
+  crypto.getRandomValues(a);
+  return Array.from(a, (n) => SEAT_KEY_ALPHABET[n % SEAT_KEY_ALPHABET.length]).join("");
+}
+async function ensureMySeatKey(state) {
+  if (!myRoomId || !myColor || !myUid || !state || !state.players) return;
+  const seat = state.players[myColor];
+  if (!seat || seat.isBot || seat.uid !== myUid) return;
+  const forKey = myRoomId + "/" + myColor + "/" + myUid;
+  if (_seatKeyFor === forKey) return;
+  _seatKeyFor = forKey;
+  mySeatKey = null;
+  const ref = db.ref("seatKeys/" + myRoomId + "/" + myColor);
+  try {
+    const v = (await ref.get()).val();
+    if (v && v.uid === myUid && v.key) { mySeatKey = v.key; return; }
+  } catch (e) {
+    // non leggibile: il codice è di chi sedeva qui prima → se ne scrive uno nuovo
+  }
+  const key = newSeatKey();
+  try {
+    await ref.set({ uid: myUid, key });
+    mySeatKey = key;
+  } catch (e) {
+    _seatKeyFor = null;
+    console.warn("codice di rientro non salvato:", e && (e.code || e.message));
+  }
+}
+
 // ---------------- Profilo legato all'uid (v6.18) ----------------------
 // profiles/<uid> = { nome, creatoIl, aggiornatoIl }: l'identità vera è l'uid
 // del login anonimo, il nome è solo un'etichetta che si può cambiare. Ognuno
@@ -6381,7 +6425,8 @@ function setupOwnPresence(roomId, color) {
   }
 }
 
-function writeState(roomId, state) {
+async function writeState(roomId, state) {
+  await waitAuth();
   return roomRef(roomId).set(state);
 }
 
@@ -6414,6 +6459,7 @@ function incrementStat(name) {
 // persone la creano nello stesso istante, vince chi arriva per primo e
 // l'altro trova comunque la modalità già decisa nel risultato restituito.
 async function claimRoomMode(roomId, mode) {
+  await waitAuth(); // v6.20: con le regole nuove si scrive solo dopo il login
   const ref = roomRef(roomId);
   let createdNew = false;
   const result = await ref.transaction((current) => {
@@ -6434,6 +6480,7 @@ async function claimRoomMode(roomId, mode) {
 async function updateState(roomId, mutatorFn) {
   // read-modify-write with a transaction so two players acting at the
   // same instant don't overwrite each other.
+  await waitAuth(); // v6.20: con le regole nuove si scrive solo dopo il login (subito, se è già fatto)
   const ref = roomRef(roomId);
   let caughtError = null;
   let justWon = false;
@@ -8054,7 +8101,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.19";
+const APP_VERSION = "v6.20";
 
 let myColor = null;
 let myRoomId = null;
@@ -8807,6 +8854,19 @@ async function recoverByName(roomId, chosenName, rowBtn) {
     // riassegnato a questo dispositivo.
     const newToken = getOrCreateClaimToken(roomId, match);
     await waitAuth();
+    // v6.20: il posto è di un altro telefono (altro uid) → serve il codice di rientro.
+    if (claim.uid && claim.uid !== myUid) {
+      const typed = prompt("Per riprendere il posto serve il codice di rientro: lo trova chi era seduto qui, sul suo telefono, in ⚙️ Impostazioni.");
+      const key = String(typed || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!key) { fail(); return; }
+      try {
+        await db.ref("seatClaims/" + roomId + "/" + match).set({ uid: myUid, key });
+      } catch (e) {
+        fail();
+        showToast("Codice di rientro sbagliato.");
+        return;
+      }
+    }
     // Si tengono tutti i campi del posto (playerId compreso: prima andava
     // perso, e le partite giocate dopo un rientro non contavano più in
     // classifica generale); cambia solo il token, che passa a questo telefono.
@@ -9332,8 +9392,11 @@ async function joinManualRoom(roomId) {
         }
         const state = normalizeState(JSON.parse(JSON.stringify(current)));
         const existing = state.players && state.players[myColor];
+        // Stesso nome = stessa persona SOLO se il posto non è di un altro telefono (v6.20: uid
+        // diverso → il posto si riprende solo con "Sono io" e il codice di rientro).
         const sameName = existing && existing.name && myName &&
-          existing.name.trim().toLowerCase() === myName.trim().toLowerCase();
+          existing.name.trim().toLowerCase() === myName.trim().toLowerCase() &&
+          (!existing.uid || existing.uid === myUid);
         if (existing && existing.token && existing.token !== claimToken && !sameName) {
           blockedReason = { kind: "color", by: existing.name || colorLabel(myColor) };
           return undefined; // annulla il tentativo, non scrivere nulla
@@ -9582,13 +9645,14 @@ function reserveColorPending(roomId, color) {
     lastPendingRefresh = Date.now();
     // Restituisce true (prenotato), false (lo ha già un altro telefono) o
     // null (errore/rete): serve a "Siediti" per mostrare l'esito sul pulsante.
-    return roomRef(roomId)
-      .child("pending")
-      .child(color)
-      .transaction((current) => {
-        if (current && current.token !== token && freshPendingColor({ x: current }, "x")) return undefined;
-        return { token, ts: serverNow() };
-      })
+    return waitAuth() // v6.20: con le regole nuove si scrive solo dopo il login
+      .then(() => roomRef(roomId)
+        .child("pending")
+        .child(color)
+        .transaction((current) => {
+          if (current && current.token !== token && freshPendingColor({ x: current }, "x")) return undefined;
+          return { token, ts: serverNow() };
+        }))
       .then((r) => !!(r && r.committed))
       .catch(() => null);
   } catch (e) {
@@ -13265,6 +13329,7 @@ function onStateChange(state) {
       if (!document.getElementById("hand-wrap")) return;
     }
   }
+  ensureMySeatKey(state).catch(() => {});
   maybeAdvanceBotTurn(state);
   maybeAdvanceBotChat(state);
   maybePlaySounds(state);
@@ -14993,6 +15058,13 @@ function openSettingsPanel(keepScroll) {
       el("button", { class: "sx-act", onclick: () => { closePicker(); openTutorial(); } }, el("span", { class: "ic" }, "🎓"), "Impara"),
       el("button", { class: "sx-act", onclick: () => { closePicker(); shareInviteLink(myRoomId); } }, el("span", { class: "ic" }, "📤"), "Condividi")
     ),
+    mySeatKey
+      ? el(
+          "div",
+          { class: "sx-list sx-keylist" },
+          settingsRow("🔑", "Codice per rientrare da un altro telefono", el("span", { class: "sx-key notranslate", translate: "no" }, mySeatKey))
+        )
+      : null,
     el("div", { class: "sx-sec" }, "Sviluppo"),
     el(
       "div",

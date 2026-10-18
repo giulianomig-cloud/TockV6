@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.19** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.20** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -107,7 +107,7 @@
 - Nelle partite miste (un telefono in italiano e uno in inglese) ognuno vede la propria lingua; le frasi pronte
   della chat e quelle dei computer si traducono, i messaggi scritti a mano no.
 
-## Sicurezza (piano graduale approvato dall'utente: passi 0-2; poi FERMARSI e aspettare l'ok)
+## Sicurezza (piano graduale: passi 0-5 PREPARATI su branch separati; NIENTE pubblicato: aspettare l'ok)
 - Checkpoint prima dei lavori: tag locale e ramo remoto `checkpoint-v6.16` (commit c89c66d). Il proxy rifiuta il push dei tag.
 - `firebase-tests/` (NON fa parte del gioco): emulatore Firebase locale, progetto finto `demo-tock`; strumenti
   installati SOLO lì (`npm install`, poi `npm test`). Dimostra le falle delle regole attuali, prova il gioco vero
@@ -126,6 +126,18 @@
   vittoria se ha vinto) e `credited/<stanza>/<gameId>/<uid>` nello stesso update. LIMITE: la vittoria la dichiarano i
   telefoni → classifica NON sicura finché non c'è il server (README di firebase-tests). Con le regole di oggi la
   versione nuova NON registra in classifica: va pubblicata insieme a `regole/transizione.json`.
+- v6.20 (branch `claude/posti-protetti`): posti protetti. Ogni posto umano ha l'uid; regole proposte: un posto di un
+  ALTRO uid non si cambia, non si cancella, non diventa computer (controllo `.validate` sulla stanza, vale anche per
+  scritture "profonde"). "Sono io" da un altro telefono = CODICE DI RIENTRO: `seatKeys/<stanza>/<colore>` = {uid, key}
+  (6 lettere/cifre, `ensureMySeatKey`, leggibile solo dal titolare, mostrato in ⚙️ Impostazioni → 🔑) e
+  `seatClaims/<stanza>/<colore>` (la regola controlla il codice). Con lo stesso nome non si prende più il posto di un
+  altro uid (`joinManualRoom`). Le scritture aspettano il login (`waitAuth` in updateState/writeState/claimRoomMode/
+  prenotazione colore). Riciclo delle stanze AUTO permesso dalle regole solo se finite/ferme da 10 min e senza presenza.
+  LIMITI rimasti (servono Cloud Functions): stato di gioco scrivibile da chi conosce il codice, mani leggibili, vittoria
+  dichiarata dai telefoni, chat AUTO libera via codice, versione finta sul proprio colore.
+- Distribuzione prevista: 1) attivare login anonimo in console; 2) pubblicare `regole/transizione.json` + gioco v6.20;
+  3) quando tutti hanno aggiornato, pubblicare `regole/proposte.json`. Con le regole di OGGI la v6.20 funziona ma non
+  registra la classifica, non salva profili/codici e il "Sono io" da altro telefono non è possibile.
 - Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
   servizi a pagamento senza ok esplicito; non cancellare né migrare la classifica attuale.
 
