@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.16** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.17** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -106,6 +106,18 @@
   quando si mostra (`trLog`, `logColorName`); i test di `LOG_EVENT_TYPES` usano sempre la riga italiana.
 - Nelle partite miste (un telefono in italiano e uno in inglese) ognuno vede la propria lingua; le frasi pronte
   della chat e quelle dei computer si traducono, i messaggi scritti a mano no.
+
+## Sicurezza (piano graduale approvato dall'utente: passi 0-2; poi FERMARSI e aspettare l'ok)
+- Checkpoint prima dei lavori: tag locale e ramo remoto `checkpoint-v6.16` (commit c89c66d). Il proxy rifiuta il push dei tag.
+- `firebase-tests/` (NON fa parte del gioco): emulatore Firebase locale, progetto finto `demo-tock`; strumenti
+  installati SOLO lì (`npm install`, poi `npm test`). Dimostra le falle delle regole attuali, prova il gioco vero
+  in Chromium contro l'emulatore, script di sola lettura per la migrazione della classifica (proposta nel README).
+- v6.17: login ANONIMO (`firebase-auth-compat.js`, `startAnonymousAuth`, `waitAuth` max 4 s, `myUid`). L'uid viene
+  solo SALVATO accanto ai posti (`players[colore].uid`, `draft.uids[token]`); le regole non lo usano ancora. Se il
+  login non riesce (accesso anonimo non attivato in console) si gioca come prima, posto senza uid.
+  `index.html?emu=1` su localhost = emulatore (`FIREBASE_EMULATOR`); sul sito vero non scatta mai.
+- Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
+  servizi a pagamento senza ok esplicito; non cancellare né migrare la classifica attuale.
 
 ## Diritti (v6.09)
 - "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`

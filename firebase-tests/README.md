@@ -29,6 +29,10 @@ npm run controlla-sito
 - `test/vulnerabilita-regole-attuali.test.js` — dimostra le falle delle regole attuali
   (`../database.rules.json`). Ogni test PASSA quando la falla esiste.
 - `test/migrazione.test.js` — controlla lo script di analisi della classifica su dati finti.
+- `test/e2e-login-anonimo.test.js` — il gioco vero in Chromium con più "telefoni", collegato
+  all'emulatore (`index.html?emu=1`, funziona solo su localhost): Gioca subito a 4, con i computer
+  (mosse, fine partita, classifica, rivincita), con gli amici, "Sono io" e login non disponibile.
+  Usa Playwright e Chromium già presenti sul computer.
 - `migrazione/analizza-classifica.js` — legge un export JSON della console e stampa un resoconto
   (solo lettura, nessun collegamento a Firebase).
 

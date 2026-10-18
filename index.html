@@ -3346,6 +3346,7 @@ html:not([data-skin]) .dealer-pile .card-btn.dealer-under { z-index: 3; filter: 
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" crossorigin="anonymous"></script>
 
 <script>
 // Configurazione del progetto Firebase "ttok-21ebe".
@@ -5987,6 +5988,13 @@ let app, db;
 function initFirebase() {
   app = firebase.initializeApp(FIREBASE_CONFIG);
   db = firebase.database();
+  // Solo per le prove sul computer (indirizzo localhost + ?emu=1): usa
+  // l'emulatore di Firebase invece del database vero. Sul sito vero non scatta mai.
+  if (FIREBASE_EMULATOR) {
+    db.useEmulator("127.0.0.1", 9000);
+    try { if (firebase.auth) firebase.auth().useEmulator("http://127.0.0.1:9099", { disableWarnings: true }); } catch (e) {}
+  }
+  startAnonymousAuth();
   // Differenza fra l'orologio del telefono e quello del server: serve a
   // confrontare gli orari scritti da telefoni diversi (vedi serverNow).
   try { db.ref(".info/serverTimeOffset").on("value", (s) => { serverTimeOffset = Number(s.val()) || 0; }); } catch (e) {}
@@ -6005,6 +6013,50 @@ function initFirebase() {
       proto.__timeoutPatched = true;
     }
   } catch (e) { console.warn("patch get", e); }
+}
+
+const FIREBASE_EMULATOR = (() => {
+  try {
+    return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("emu") === "1";
+  } catch (e) { return false; }
+})();
+
+// ---- Login anonimo (v6.17) -------------------------------------------
+// Ogni telefono riceve da Firebase un ID permanente (uid) che non dipende dal
+// nome, senza chiedere nulla alla persona. Per ora l'uid viene solo SALVATO
+// accanto ai posti (players[colore].uid, draft.uids[token]): le regole del
+// database non lo usano ancora, quindi se il login non riesce (es. accesso
+// anonimo non attivato in console, nessuna rete) il gioco funziona come prima.
+let myUid = null;
+let _authReady = null;
+function startAnonymousAuth() {
+  _authReady = new Promise((resolve) => {
+    let auth;
+    try {
+      if (!firebase.auth) return resolve(null);
+      auth = firebase.auth();
+    } catch (e) { return resolve(null); }
+    let tried = false;
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        myUid = user.uid;
+        resolve(user.uid);
+      } else if (!tried) {
+        tried = true;
+        auth.signInAnonymously().catch((e) => {
+          console.warn("login anonimo non riuscito:", e && e.code);
+          resolve(null);
+        });
+      }
+    });
+  });
+}
+// Aspetta il login al massimo `ms` millisecondi: l'accesso resta immediato
+// anche se Firebase è lento o il login non è disponibile.
+function waitAuth(ms = 4000) {
+  if (myUid) return Promise.resolve(myUid);
+  if (!_authReady) return Promise.resolve(null);
+  return Promise.race([_authReady, new Promise((r) => setTimeout(() => r(myUid), ms))]);
 }
 
 // Ora "del server": gli orologi dei telefoni possono essere sfasati anche di
@@ -7976,7 +8028,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.16";
+const APP_VERSION = "v6.17";
 
 let myColor = null;
 let myRoomId = null;
@@ -8728,10 +8780,11 @@ async function recoverByName(roomId, chosenName, rowBtn) {
     // claim-token già usato dalla modalità manuale, semplicemente
     // riassegnato a questo dispositivo.
     const newToken = getOrCreateClaimToken(roomId, match);
+    await waitAuth();
     // Si tengono tutti i campi del posto (playerId compreso: prima andava
     // perso, e le partite giocate dopo un rientro non contavano più in
     // classifica generale); cambia solo il token, che passa a questo telefono.
-    await roomRef(roomId).child("players").child(match).set({ ...claim, token: newToken });
+    await roomRef(roomId).child("players").child(match).set({ ...claim, token: newToken, uid: myUid || null });
     myColor = match;
     myRoomId = roomId;
     myName = claim.name;
@@ -9204,6 +9257,7 @@ async function selectColor(c, btn) {
 
 async function joinManualRoom(roomId) {
   unlockAudio();
+  await waitAuth();
   const typed = $("#name-input").value.trim();
   if (!myColor) return showToast("Scegli un colore.");
   myRoomId = roomId;
@@ -9247,7 +9301,7 @@ async function joinManualRoom(roomId) {
       try {
         if (current === null) {
           const players = {};
-          players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null };
+          players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null, uid: myUid || null };
           return newGameState(players, "manual");
         }
         const state = normalizeState(JSON.parse(JSON.stringify(current)));
@@ -9279,7 +9333,7 @@ async function joinManualRoom(roomId) {
           return undefined;
         }
         if (!state.players) state.players = {};
-        state.players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null };
+        state.players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null, uid: myUid || null };
         return state;
       } catch (e) {
         caughtError = e;
@@ -9624,6 +9678,7 @@ function mmPruneMyDuplicates(d, keep) {
     if (seen && serverNow() - seen < 25000) return;
     delete d.players[t];
     delete d.playerIds[t];
+    if (d.uids) delete d.uids[t];
     if (d.seen) delete d.seen[t];
     if (Array.isArray(d.order)) d.order = d.order.filter((x) => x !== t);
   });
@@ -9635,6 +9690,7 @@ function mmPruneStale(d, keep) {
     if (t === keep || !mmIsStale(d, t)) return;
     delete d.players[t];
     if (d.playerIds) delete d.playerIds[t];
+    if (d.uids) delete d.uids[t];
     if (d.seen) delete d.seen[t];
     if (Array.isArray(d.order)) d.order = d.order.filter((x) => x !== t);
   });
@@ -9741,6 +9797,8 @@ async function mmJoinRoom(roomId, recycle, token) {
       d.players[token] = mmUniqueName(d.players, token, myName);
       if (!d.playerIds) d.playerIds = {};
       d.playerIds[token] = myPlayerId || null;
+      if (!d.uids) d.uids = {};
+      d.uids[token] = myUid || null;
       if (!d.botTokens) d.botTokens = {};
       maybeStartPairDraw(st);
       mmAutoTeams(st);
@@ -9842,6 +9900,7 @@ async function mmSearch() {
   mm = { roomId: null, token: null, since: Date.now(), busy: true };
   mmRenderKey = null;
   renderMatchWaiting(null);
+  await waitAuth();
   try {
     for (let attempt = 0; attempt < 6 && mm; attempt++) {
       const found = await mmFindRoom();
@@ -9905,6 +9964,7 @@ async function mmCancel() {
       if (!st || !st.draft || !st.draft.players || st.draft.pairDraw) return undefined;
       delete st.draft.players[cur.token];
       if (st.draft.playerIds) delete st.draft.playerIds[cur.token];
+      if (st.draft.uids) delete st.draft.uids[cur.token];
       if (st.draft.seen) delete st.draft.seen[cur.token];
       if (Array.isArray(st.draft.order)) st.draft.order = st.draft.order.filter((t) => t !== cur.token);
       // rimasti solo computer? si svuota la stanza, così è subito libera
@@ -10099,6 +10159,7 @@ function renderDraftNameScreen(roomId) {
 
 async function joinDraftRoom(roomId) {
   unlockAudio();
+  await waitAuth();
   const typed = $("#name-input").value.trim();
   if (!typed) return showToast("Inserisci il tuo nome.");
   // Rubrica (v5): vedi il commento gemello in joinManualRoom.
@@ -10133,6 +10194,8 @@ async function joinDraftRoom(roomId) {
           state.draft.order.push(myToken);
           if (!state.draft.playerIds) state.draft.playerIds = {};
           state.draft.playerIds[myToken] = myPlayerId || null;
+          if (!state.draft.uids) state.draft.uids = {};
+          state.draft.uids[myToken] = myUid || null;
           return state;
         }
         const state = normalizeState(JSON.parse(JSON.stringify(current)));
@@ -10158,6 +10221,8 @@ async function joinDraftRoom(roomId) {
         state.draft.players[myToken] = myName;
         if (!state.draft.playerIds) state.draft.playerIds = {};
         state.draft.playerIds[myToken] = myPlayerId || null;
+        if (!state.draft.uids) state.draft.uids = {};
+        state.draft.uids[myToken] = myUid || null;
         maybeStartPairDraw(state);
         return state;
       } catch (e) {
@@ -10323,7 +10388,7 @@ function maybeFinalizeDraft(state) {
     const botLevel = d.botTokens && d.botTokens[token];
     state.players[color] = botLevel
       ? { name: d.players[token], token, isBot: true, botLevel }
-      : { name: d.players[token], token, playerId: (d.playerIds && d.playerIds[token]) || null };
+      : { name: d.players[token], token, playerId: (d.playerIds && d.playerIds[token]) || null, uid: (d.uids && d.uids[token]) || null };
   }
   // A differenza della modalità manuale (dove tutti scelgono il proprio
   // colore da soli e quindi c'è sempre qualcuno pronto a cliccare "Inizia
