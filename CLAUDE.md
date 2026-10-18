@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.17** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.18** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -116,6 +116,11 @@
   solo SALVATO accanto ai posti (`players[colore].uid`, `draft.uids[token]`); le regole non lo usano ancora. Se il
   login non riesce (accesso anonimo non attivato in console) si gioca come prima, posto senza uid.
   `index.html?emu=1` su localhost = emulatore (`FIREBASE_EMULATOR`); sul sito vero non scatta mai.
+- v6.18 (branch `claude/profili-uid`): profilo `profiles/<uid>` = {nome, creatoIl, aggiornatoIl} scritto da
+  `saveMyProfile` (chiamata da `savePlayerShortcut` e da `startMatchmaking`). La rubrica `players/` e la classifica
+  vecchia NON vengono toccate né assegnate. Regole proposte (NON pubblicate) in `firebase-tests/regole/proposte.json`;
+  `database.rules.json` resta quello di produzione. `_config.yml` esclude `firebase-tests/` dal sito (verificato con
+  Jekyll locale: `npm run controlla-sito`).
 - Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
   servizi a pagamento senza ok esplicito; non cancellare né migrare la classifica attuale.
 

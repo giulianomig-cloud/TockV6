@@ -6160,6 +6160,30 @@ function savePlayerShortcut(id, nome) {
   try {
     localStorage.setItem("tock-player", JSON.stringify({ id, nome }));
   } catch (e) {}
+  saveMyProfile(nome);
+}
+
+// ---------------- Profilo legato all'uid (v6.18) ----------------------
+// profiles/<uid> = { nome, creatoIl, aggiornatoIl }: l'identità vera è l'uid
+// del login anonimo, il nome è solo un'etichetta che si può cambiare. Ognuno
+// scrive SOLO il proprio profilo. Non tocca la rubrica players/ né la
+// classifica esistente (i vecchi profili non vengono assegnati a nessuno).
+// Se il login non c'è o le regole del database non lo permettono ancora,
+// non succede nulla: il gioco va avanti come prima.
+const PROFILE_NAME_MAX = 40;
+async function saveMyProfile(nome) {
+  const uid = await waitAuth();
+  const n = String(nome || "").trim().replace(/\s+/g, " ").slice(0, PROFILE_NAME_MAX);
+  if (!uid || !n || !db) return;
+  try {
+    const ref = db.ref("profiles/" + uid);
+    const upd = { nome: n, aggiornatoIl: firebase.database.ServerValue.TIMESTAMP };
+    const created = await ref.child("creatoIl").get();
+    if (!created.exists()) upd.creatoIl = firebase.database.ServerValue.TIMESTAMP;
+    await ref.update(upd);
+  } catch (e) {
+    console.warn("profilo non salvato:", e && (e.code || e.message));
+  }
 }
 
 // ---------------- Classifica generale (v5) ----------------------------
@@ -8028,7 +8052,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.17";
+const APP_VERSION = "v6.18";
 
 let myColor = null;
 let myRoomId = null;
@@ -9851,6 +9875,7 @@ async function startMatchmaking() {
   if (!saved || !saved.nome) return vtGo(null, null, () => renderMatchNameScreen());
   myName = saved.nome;
   myPlayerId = saved.id || null;
+  saveMyProfile(saved.nome);
   mmSearch();
 }
 
