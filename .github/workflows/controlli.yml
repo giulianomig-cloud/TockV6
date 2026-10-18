@@ -1,17 +1,116 @@
-# Controlli automatici delle regole del gioco: girano a ogni aggiornamento
-# e a ogni pull request. Se una regola si rompe, GitHub lo segnala con una ❌.
-name: Controlli regole
+# Controlli automatici. Girano a ogni pull request (e a ogni suo aggiornamento), a ogni push su main
+# e quando li richiama il rilascio. NESSUN segreto e permessi di sola lettura: possono girare anche
+# su codice non ancora controllato (es. una pull request da un fork) senza poter scrivere nulla.
+# Il controllo da rendere OBBLIGATORIO in GitHub (Settings → Branches) è "Tutti i controlli".
+name: Controlli
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: controlli-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   regole:
+    name: Regole del gioco
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: node --test tests/*.test.js
+
+  workflow:
+    name: Workflow sicuri
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test .github/scripts/*.test.js
+      - run: node .github/scripts/controlla-workflow.js
+
+  sito:
+    name: Il sito non pubblica i test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Jekyll 3.10 (come GitHub Pages), installato solo in firebase-tests/.gems
+        working-directory: firebase-tests
+        run: gem install --no-document --install-dir .gems jekyll:3.10.0 kramdown-parser-gfm webrick
+      - working-directory: firebase-tests
+        run: node controlla-sito.js
+
+  firebase:
+    name: Sicurezza Firebase (emulatore)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Mai il Firebase vero: progetto finto demo-tock ed emulatore locale, nessuna credenziale.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # serve il commit della v6.16 per le prove fra versioni
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firebase-tests/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: emulatori-${{ hashFiles('firebase-tests/package-lock.json') }}
+      - working-directory: firebase-tests
+        run: npm ci
+      - working-directory: firebase-tests
+        run: npx playwright install --with-deps chromium
+      - name: Regole, attacchi, posti, classifica, migrazione, rilascio, gioco vero in Chromium
+        working-directory: firebase-tests
+        run: npm test
+      - name: Ripristino delle regole (andata e ritorno)
+        working-directory: firebase-tests
+        run: npm run fase0-prova
+      - name: Log dell'emulatore se qualcosa va storto
+        if: failure()
+        working-directory: firebase-tests
+        run: tail -n 200 *-debug.log || true
+
+  esito:
+    name: Tutti i controlli
+    if: always()
+    needs: [regole, workflow, sito, firebase]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Tutti i controlli devono essere verdi
+        env:
+          ESITI: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Esiti: $ESITI"
+          for e in $ESITI; do [ "$e" = "success" ] || { echo "Un controllo non è riuscito ($e)"; exit 1; }; done
