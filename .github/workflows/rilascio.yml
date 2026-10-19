@@ -88,8 +88,9 @@ jobs:
           PROVA: ${{ inputs.prova }}
         run: |
           file() { case "$1" in attuali) echo ../database.rules.json;; transizione) echo regole/transizione.json;; definitive) echo regole/proposte.json;; *) echo "";; esac; }
-          export TOCK_REGOLE_NUOVE="$(file "$SCELTA_NUOVE")"
-          export TOCK_REGOLE_ATTESE="$(file "$SCELTA_ATTESE")"
+          TOCK_REGOLE_NUOVE="$(file "$SCELTA_NUOVE")"
+          TOCK_REGOLE_ATTESE="$(file "$SCELTA_ATTESE")"
+          export TOCK_REGOLE_NUOVE TOCK_REGOLE_ATTESE
           if [ "$VUOI_MIGRAZIONE" = "true" ]; then export TOCK_MIGRAZIONE="$RUNNER_TEMP/migrazione.json"; fi
           if [ "$PROVA" = "true" ]; then export TOCK_PROVA=si; else export TOCK_PROVA=no; fi
           npx firebase emulators:exec --only database --project demo-tock "node rilascio/esegui.js"
