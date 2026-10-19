@@ -3,7 +3,7 @@
 // Solo emulatore, regole di transizione.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE, richiede } = require("./e2e-banco");
 
 const { telefono, errori } = preparaBanco("../regole/transizione.json");
 const STANZA = { gameId: "g1", roomMode: "manual", phase: "playing", turnColor: "red", contatore: 0, log: ["inizio"] };
@@ -19,7 +19,7 @@ const incrementa = (t, stanza = "PROVA1") =>
   t.page.evaluate((r) => updateState(r, (s) => { s.contatore = (s.contatore || 0) + 1; s.log.push("+1"); })
     .then(() => "ok", (e) => "errore: " + (e.code || "") + " " + e.message), stanza);
 
-test("stanza non in memoria: la modifica riesce da sola ed è applicata UNA sola volta", LIMITE, async () => {
+test("stanza non in memoria: la modifica riesce da sola ed è applicata UNA sola volta", richiede("v6.22"), async () => {
   await scrivi("games/PROVA1", STANZA);
   const t = await telefonoFresco("Fresco");
   assert.equal(await incrementa(t), "ok");
@@ -36,7 +36,7 @@ test("stanza che non esiste: errore 'non esiste più', nessun tentativo a vuoto,
   assert.equal(await leggi("games/NONESISTE"), null);
 });
 
-test("una mossa che dà errore NON viene ripetuta (il mutatore parte una volta)", LIMITE, async () => {
+test("una mossa che dà errore NON viene ripetuta (il mutatore parte una volta)", richiede("v6.22"), async () => {
   await scrivi("games/PROVA1", STANZA);
   const t = await telefonoFresco("Fresco");
   const esito = await t.page.evaluate(() => {
@@ -49,7 +49,7 @@ test("una mossa che dà errore NON viene ripetuta (il mutatore parte una volta)"
   assert.equal((await leggi("games/PROVA1")).contatore, 0);
 });
 
-test("due telefoni insieme (uno senza stanza in memoria): ogni modifica applicata una volta, totale 2", LIMITE, async () => {
+test("due telefoni insieme (uno senza stanza in memoria): ogni modifica applicata una volta, totale 2", richiede("v6.22"), async () => {
   await scrivi("games/PROVA1", STANZA);
   const a = await telefonoFresco("A-fresco");
   const b = await telefono("B-in-ascolto");

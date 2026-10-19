@@ -2,7 +2,7 @@
 // v6.16 (sul sito oggi) e v6.21 (correzione delle stanze bloccate). Solo emulatore.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE, richiede } = require("./e2e-banco");
 const { autoGioca, fermaAutoGioca, mosseNelRegistro } = require("./e2e-aiuti-partita");
 const { datiFinti, TOKEN_LIA } = require("../fase12/dati-finti");
 
@@ -41,7 +41,7 @@ test("v6.16: chi ha una partita in corso (come Yaymaris in AUTO-2) ci rientra e 
   assert.deepEqual(errori, []);
 });
 
-test("v6.21+: Gioca subito ricicla la stanza bloccata AUTO-1 (si perde solo l'attesa bloccata)", LIMITE, async () => {
+test("v6.21+: Gioca subito ricicla la stanza bloccata AUTO-1 (si perde solo l'attesa bloccata)", richiede("v6.21"), async () => {
   await caricaDati();
   const t = await telefono("Ugo-v621", { giocatore: { id: "-FINTOugo", nome: "Ugo" } });
   assert.ok(await t.page.evaluate(() => compareAppVersions(APP_VERSION, "v6.21") >= 0), "serve la v6.21 o successiva");
@@ -80,7 +80,7 @@ test("causa di AUTO-1 riprodotta: con la v6.16 caduta + rientro = stesso telefon
   assert.equal(s.players, undefined);
 });
 
-test("con la v6.21 caduta + rientro = nessun doppione, la partita parte con 4 posti diversi", LIMITE, async () => {
+test("con la v6.21 caduta + rientro = nessun doppione, la partita parte con 4 posti diversi", richiede("v6.21"), async () => {
   const t = await telefono("Pino-v621", { giocatore: { id: "-FINTOpino", nome: "Pino" } });
   const s = await cadutaERientro(t);
   assert.ok(!doppioni(s.draft.order));
