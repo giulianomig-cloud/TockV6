@@ -2,7 +2,7 @@
 // anche nella stessa stanza con la v6.20. Solo emulatore.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE, richiede } = require("./e2e-banco");
 const { autoGioca, fermaAutoGioca, mosseNelRegistro, sedutoConAmici, conRiprova } = require("./e2e-aiuti-partita");
 
 const { telefono, errori } = preparaBanco("../regole/transizione.json");
@@ -38,7 +38,7 @@ test("v6.16 con le regole di transizione: con gli amici e 'Sono io' funzionano c
   assert.deepEqual(errori, []);
 });
 
-test("Stanza mista: versione nuova e v6.16 insieme; la v6.16 vede l'avviso 'aggiorna' e non cancella l'uid della v6.20", LIMITE, async () => {
+test("Stanza mista: versione nuova e v6.16 insieme; la v6.16 vede l'avviso 'aggiorna' e non cancella l'uid della v6.20", richiede("v6.20"), async () => {
   const nuovo = await telefono("Fabio-v620");
   await sedutoConAmici(nuovo.page, "Fabio", "red", "MISTA1");
   const uidF = await nuovo.page.evaluate(() => myUid);

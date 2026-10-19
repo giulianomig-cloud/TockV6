@@ -24,6 +24,24 @@ const FB = path.resolve(__dirname, "../node_modules/firebase");
 const CHROME = fs.existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined;
 const LIMITE = { timeout: 180000 };
 
+// Versione del gioco che si sta provando (index.html di questo branch). Nel branch di RIPRISTINO il gioco
+// è la v6.16 (numerata v6.23): le prove delle funzioni nate dopo la v6.16 (login, profili, posti protetti,
+// stanze bloccate, nuovo tentativo) non hanno niente da provare e vengono SALTATE con il motivo scritto.
+// Le prove delle regole e quelle di compatibilità della v6.16 girano sempre. Il ripristino si riconosce
+// dal codice (identico alla v6.16 salvo il numero): un numero alto da solo non basta (vedi codiceV616).
+const HTML_ATTUALE = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const numero = (v) => { const [a, b] = String(v).replace(/^v/, "").split(".").map(Number); return a * 100 + b; };
+const GIOCO_V616 = (() => {
+  const vecchio = execSync(`git -C "${ROOT}" show c89c66d:index.html`, { maxBuffer: 64 * 1024 * 1024 }).toString();
+  const senzaNumero = (h) => h.replace(/const APP_VERSION = "[^"]+"/, "");
+  return senzaNumero(vecchio) === senzaNumero(HTML_ATTUALE);
+})();
+// Uso: test("…", richiede("v6.20"), async () => {…}) al posto di LIMITE.
+function richiede(minima) {
+  if (!GIOCO_V616) return LIMITE;
+  return { ...LIMITE, skip: `funzione nata nella ${minima}: il gioco di questo branch è la v6.16 ripristinata` };
+}
+
 const leggi = async (p) => (await fetch(`${DB}/${p}.json?ns=${NS}`, { headers: OWNER })).json();
 const scrivi = (p, v) => fetch(`${DB}/${p}.json?ns=${NS}`, { method: "PUT", headers: OWNER, body: JSON.stringify(v) });
 const aspetta = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -146,4 +164,4 @@ function preparaBanco(fileRegole) {
   return { telefono, errori };
 }
 
-module.exports = { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE };
+module.exports = { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE, richiede, GIOCO_V616 };

@@ -2,12 +2,12 @@
 // INSIEME alla versione nuova del gioco, finché tutti non hanno aggiornato.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE, richiede } = require("./e2e-banco");
 const { conRiprova } = require("./e2e-aiuti-partita");
 
 const { telefono, errori } = preparaBanco("../regole/transizione.json");
 
-test("Transizione: profilo, codice di rientro, 'Sono io' col codice e classifica funzionano già", LIMITE, async () => {
+test("Transizione: profilo, codice di rientro, 'Sono io' col codice e classifica funzionano già", richiede("v6.20"), async () => {
   await scrivi("leaderboard/-vecchioAnna", { nome: "Anna", vittorie: 12, partite: 20, vinte: 12 });
   const a = await telefono("Fabio", { giocatore: { id: "p-fabio", nome: "Fabio" } });
   await a.page.evaluate(async () => {

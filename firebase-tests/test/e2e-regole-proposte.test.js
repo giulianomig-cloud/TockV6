@@ -1,7 +1,7 @@
 // Prova "dal vivo" con le regole PROPOSTE (regole/proposte.json), solo sull'emulatore.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE, richiede } = require("./e2e-banco");
 const { conRiprova } = require("./e2e-aiuti-partita");
 
 const { telefono, errori } = preparaBanco("../regole/proposte.json");
@@ -12,7 +12,7 @@ const VECCHI = {
   leaderboard: { "-vecchioAnna": { nome: "Anna", vittorie: 12, partite: 20, vinte: 12 } },
 };
 
-test("Passo 3: ogni telefono ha il suo profilo; stesso nome = due profili; i dati vecchi restano intatti", LIMITE, async () => {
+test("Passo 3: ogni telefono ha il suo profilo; stesso nome = due profili; i dati vecchi restano intatti", richiede("v6.18"), async () => {
   await scrivi("players", VECCHI.players);
   await scrivi("leaderboard", VECCHI.leaderboard);
   const a = await telefono("Anna-1", { giocatore: { id: "-vecchioAnna", nome: "Anna" } });
@@ -61,7 +61,7 @@ const finisci = (t, vinco) =>
     s.winnerTeam = v ? TEAM_OF[myColor] : TEAM_OF[myColor] === "A" ? "B" : "A";
   }), vinco));
 
-test("Passo 4: a fine partita ognuno registra il PROPRIO risultato, una volta sola; rivincita = partita nuova", LIMITE, async () => {
+test("Passo 4: a fine partita ognuno registra il PROPRIO risultato, una volta sola; rivincita = partita nuova", richiede("v6.19"), async () => {
   await scrivi("leaderboard", VECCHI.leaderboard);
   const t = await telefono("Elena", { giocatore: { id: "p-elena", nome: "Elena" } });
   const roomId = await partitaColComputer(t);
@@ -115,7 +115,7 @@ async function autoGioca(page) {
 }
 const mosseNelRegistro = (s) => (s.log || []).filter((r) => / muove con | gioca il 7| entra in gioco | gioca un Jack/.test(r)).length;
 
-test("Passo 5: Gioca subito a 4 persone con le regole definitive (posti creati per tutti)", LIMITE, async () => {
+test("Passo 5: Gioca subito a 4 persone con le regole definitive (posti creati per tutti)", richiede("v6.20"), async () => {
   const nomi = ["Anna", "Bruno", "Carla", "Dario"];
   const tel = [];
   for (const n of nomi) {
@@ -136,7 +136,7 @@ test("Passo 5: Gioca subito a 4 persone con le regole definitive (posti creati p
   assert.deepEqual(errori, []);
 });
 
-test("Passo 5: partita coi computer con le regole definitive (mosse, fine, classifica, rivincita)", LIMITE, async () => {
+test("Passo 5: partita coi computer con le regole definitive (mosse, fine, classifica, rivincita)", richiede("v6.20"), async () => {
   const t = await telefono("Elena", { giocatore: { id: "p-elena", nome: "Elena" } });
   const roomId = await partitaColComputer(t);
   await autoGioca(t.page);
@@ -163,7 +163,7 @@ async function amiciSeduto(t, nome, colore, stanza) {
   await finché(() => t.page.evaluate(() => !!mySeatKey));
 }
 
-test("Passo 5: 'Sono io' — senza il codice di rientro nessuno prende il posto; con il codice sì", LIMITE, async () => {
+test("Passo 5: 'Sono io' — senza il codice di rientro nessuno prende il posto; con il codice sì", richiede("v6.20"), async () => {
   const fabio = await telefono("Fabio");
   await amiciSeduto(fabio, "Fabio", "red", "AMICI1");
   const uidF = await fabio.page.evaluate(() => myUid);
@@ -208,7 +208,7 @@ test("Passo 5: 'Sono io' — senza il codice di rientro nessuno prende il posto;
   assert.deepEqual(errori, []);
 });
 
-test("Passo 5: Gioca subito ricicla una stanza AUTO abbandonata anche con le regole definitive", LIMITE, async () => {
+test("Passo 5: Gioca subito ricicla una stanza AUTO abbandonata anche con le regole definitive", richiede("v6.20"), async () => {
   await scrivi("games/AUTO-1", {
     gameId: "vecchia", roomMode: "draw", phase: "finished", winnerTeam: "A", turnStartedAt: Date.now() - 3600000,
     players: { red: { name: "Zeno", token: "t-z", uid: "uid-zeno" }, green: { name: "Robo", token: "bot-1", isBot: true } },

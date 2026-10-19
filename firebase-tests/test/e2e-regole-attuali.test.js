@@ -2,12 +2,12 @@
 // le versioni nuove del gioco devono funzionare anche prima che si pubblichino regole nuove.
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("./e2e-banco");
+const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE, richiede } = require("./e2e-banco");
 const { conRiprova } = require("./e2e-aiuti-partita");
 
 const { telefono, errori } = preparaBanco("../../database.rules.json");
 
-test("Gioca subito con 4 persone: ogni posto ha l'uid del proprio telefono", LIMITE, async () => {
+test("Gioca subito con 4 persone: ogni posto ha l'uid del proprio telefono", richiede("v6.17"), async () => {
   const nomi = ["Anna", "Bruno", "Carla", "Dario"];
   const tel = [];
   for (const [i, n] of nomi.entries()) {
@@ -37,7 +37,7 @@ test("Gioca subito con 4 persone: ogni posto ha l'uid del proprio telefono", LIM
   for (const t of tel) await t.ctx.close();
 });
 
-test("Gioca subito con i computer: i bot giocano, la rivincita riparte (classifica: serve almeno la transizione)", LIMITE, async () => {
+test("Gioca subito con i computer: i bot giocano, la rivincita riparte (classifica: serve almeno la transizione)", richiede("v6.17"), async () => {
   const t = await telefono("Elena", { giocatore: { id: "p-elena", nome: "Elena" } });
   await t.page.evaluate(() => startMatchmaking());
   const roomId = await finché(() => t.page.evaluate(() => mm && mm.roomId));
@@ -101,7 +101,7 @@ test("Gioca subito con i computer: i bot giocano, la rivincita riparte (classifi
   await t.ctx.close();
 });
 
-test("Con gli amici: il posto ha l'uid; 'Sono io' da un altro telefono chiede il codice di rientro", LIMITE, async () => {
+test("Con gli amici: il posto ha l'uid; 'Sono io' da un altro telefono chiede il codice di rientro", richiede("v6.20"), async () => {
   const a = await telefono("Fabio");
   await a.page.evaluate(async () => {
     document.body.insertAdjacentHTML("beforeend", '<input id="name-input" value="Fabio">');
@@ -130,7 +130,7 @@ test("Con gli amici: il posto ha l'uid; 'Sono io' da un altro telefono chiede il
   assert.deepEqual(errori, []);
 });
 
-test("Se il login non è disponibile si gioca come prima (posto senza uid)", LIMITE, async () => {
+test("Se il login non è disponibile si gioca come prima (posto senza uid)", richiede("v6.17"), async () => {
   const t = await telefono("Gina", { senzaLogin: true, giocatore: { id: "p-gina", nome: "Gina" } });
   const prima = Date.now();
   await t.page.evaluate(() => startMatchmaking());
