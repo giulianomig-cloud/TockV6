@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.23** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.24** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -198,8 +198,13 @@
 - Regole: `regole/genera-arbitro.js` → `proposte.json` (5A) e `arbitro.json` (5B). Ordine di rilascio R0-R7 in
   FASE5.md (5A → Blaze → funzione → config/arbitro → attesa v6.23 → 5B). `fase5/controlla-pronti.js export.json`.
 - Prove: `functions` (npm test), `firebase-tests` (npm test, npm run test-arbitro), job CI "Arbitro sul server".
-- Ripristino dopo la v6.23: branch `claude/ripristino-v624` (gioco v6.22 col numero v6.24; le prove dell'arbitro si
-  saltano SOLO se index.html è identico alla v6.22, `senzaArbitro()` in arbitro-e2e/aiuti.js). La PR #31 (v6.23 = v6.16) è SUPERATA.
+- v6.24 (branch `claude/fase5-auto-5b`): soluzione A per R7 (scelta dall'utente il 20/10). Regola 5B `recupero` (stanza
+  AUTO "di prima" in sala d'attesa SENZA posti → stanza con l'arbitro) + gioco `mmDaRecuperare` (con l'arbitro acceso,
+  sala d'attesa "di prima" senza nessuno di vivo → stanza nuova con l'arbitro). 5B richiede telefoni ≥ v6.24.
+  Nelle regole: prima posti/creazione/recupero, poi il riciclo (il riciclo va in errore senza turnStartedAt e un errore
+  nega tutta la regola). Nei test delle regole la prova della 5A va per ULTIMA (ricarica le regole sull'emulatore).
+- Ripristino: branch `claude/ripristino-v625` = gioco v6.23 col numero v6.25 (le prove del recupero si saltano SOLO se
+  index.html è identico alla v6.23, `senzaRecupero()`). Superati `claude/ripristino-v624` (v6.22) e la PR #31.
 - R0 FATTO (19/10): v6.23 online (82e2958), arbitro spento. R1 FATTO (20/10): `firebase-tests/fase5/R1.md` (export del
   19/10 = prima della v6.23; tutte le stanze di prima senza uid; prova `npm run r2-prova` con BACKUP_DATI 4/4; criterio:
   non prima del 22/10 pomeriggio + 3 export + controllo "v6.23" sui telefoni). Trovato per R7: stanze AUTO "di prima"
