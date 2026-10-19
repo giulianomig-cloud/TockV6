@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.gems/
+
+# Fase 0: copie dei dati veri e rapporti NON vanno mai nel repository
+*.export.json
+regole-pubblicate*.json
+regole-backup*.json
+rapporto-fase0.json

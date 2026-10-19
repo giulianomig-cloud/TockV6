@@ -39,28 +39,31 @@
 
   <section>
     <h2>In breve</h2>
-    <p>Tock non chiede email, numero di telefono o account. Non mostra pubblicità, non ti traccia e non vende né cede i tuoi dati a nessuno. Servono solo il <b>nome</b> che scegli tu e i dati della partita.</p>
+    <p>Tock non chiede email, numero di telefono né password: non devi creare un account. Non mostra pubblicità, non ti segue fuori dal gioco e non vende né cede i tuoi dati a nessuno. Servono solo il <b>nome</b> che scegli tu, un <b>codice anonimo</b> che riconosce il tuo telefono e i dati della partita.</p>
   </section>
 
   <section>
     <h2>Quali dati usiamo</h2>
     <ul>
       <li><b>Il nome che scrivi</b> (anche un soprannome): lo vedono gli altri giocatori al tavolo e compare nella classifica.</li>
-      <li><b>I dati della partita</b>: stanza, colore, carte, mosse, messaggi della chat della stanza, vittorie e partite giocate (per la classifica).</li>
+      <li><b>Un codice anonimo (identificativo, "uid")</b>: alla prima apertura l'app chiede a Firebase Authentication di Google un accesso anonimo, senza email né altri dati tuoi. Ne nasce un codice casuale che resta salvato sul telefono e serve a riconoscerlo: per proteggere il tuo posto al tavolo, per registrare in classifica il tuo risultato una sola volta per partita e per collegare il tuo profilo. Non è usato per pubblicità né per seguirti fuori da Tock.</li>
+      <li><b>Il profilo</b>: il nome che usi e le date di creazione e di ultimo aggiornamento, legati al codice anonimo.</li>
+      <li><b>Il codice di rientro</b> (6 lettere o cifre) del posto che occupi in una stanza: lo vedi solo tu, nelle Impostazioni durante la partita, e serve a rientrare al tuo posto da un altro telefono.</li>
+      <li><b>I dati della partita</b>: stanza, colore, carte, mosse, messaggi della chat della stanza, vittorie e partite giocate (per la classifica). Ogni posto al tavolo e ogni riga della classifica nuova sono collegati al codice anonimo.</li>
       <li><b>Lo stato "collegato"</b> e la versione dell'app, per mostrare agli altri chi è online.</li>
       <li><b>Contatori anonimi</b> (per esempio quante partite si giocano in totale), senza nomi.</li>
     </ul>
-    <p>Sul tuo telefono restano alcune preferenze (tema, suoni, lezioni fatte, il nome usato l'ultima volta). Non escono dal telefono.</p>
+    <p>Sul tuo telefono restano alcune preferenze (tema, suoni, lingua, lezioni fatte, il nome e l'ultima stanza usati) e il codice anonimo. Le preferenze non escono dal telefono. Se cancelli i dati dell'app o del browser, al prossimo avvio ricevi un codice anonimo nuovo: i dati legati a quello vecchio restano finché non chiedi di cancellarli.</p>
   </section>
 
   <section>
     <h2>Dove sono conservati</h2>
-    <p>Le partite passano da <b>Firebase Realtime Database</b> di Google, con i server in Europa (Belgio). Google tratta questi dati per nostro conto, secondo le proprie regole sulla protezione dei dati.</p>
+    <p>Le partite passano da <b>Firebase Realtime Database</b> di Google, con i server in Europa (Belgio). L'accesso anonimo è gestito da <b>Firebase Authentication</b> di Google, che conserva il codice anonimo con la data di creazione e dell'ultimo accesso e, per motivi di sicurezza, può registrare dati tecnici della connessione (per esempio l'indirizzo IP). Google tratta questi dati per nostro conto, secondo le proprie regole sulla protezione dei dati.</p>
   </section>
 
   <section>
     <h2>Per quanto tempo</h2>
-    <p>Le stanze di gioco restano finché non vengono riusate per nuove partite. Il nome e la classifica restano finché non chiedi di cancellarli.</p>
+    <p>Le stanze di gioco restano finché non vengono riusate per nuove partite. Il nome, il profilo, il codice anonimo e la classifica restano finché non chiedi di cancellarli. I codici di rientro restano legati alla stanza a cui si riferiscono.</p>
   </section>
 
   <section>
@@ -70,7 +73,7 @@
 
   <section>
     <h2>I tuoi diritti e i contatti</h2>
-    <p>Puoi chiedere in qualsiasi momento di vedere, correggere o cancellare il tuo nome, le tue partite e la tua riga in classifica. Scrivi a <a href="mailto:miroga.dream@gmail.com"><b>miroga.dream@gmail.com</b></a> indicando il nome usato nell'app.</p>
+    <p>Puoi chiedere in qualsiasi momento di vedere, correggere o cancellare il tuo nome, il tuo profilo, il codice anonimo, le tue partite e la tua riga in classifica. Scrivi a <a href="mailto:miroga.dream@gmail.com"><b>miroga.dream@gmail.com</b></a> indicando il nome usato nell'app e, se possibile, quando e in quale stanza hai giocato. Il nome da solo non basta a dire che i dati sono tuoi (più persone possono usare lo stesso nome): per questo potremmo chiederti il codice di rientro che vedi nelle Impostazioni durante una partita.</p>
     <p>Responsabile dell'app: Mig (sviluppatore di Tock).</p>
   </section>
 
@@ -87,7 +90,7 @@
   <div class="en">
     <section>
       <h2>English summary</h2>
-      <p>Tock needs no account, email or phone number, shows no ads and does not track you or sell data. It only uses the nickname you choose and game data (rooms, moves, room chat, wins for the leaderboard), stored on Google Firebase Realtime Database (EU servers). Games with strangers ("Gioca subito") only allow preset chat phrases. To view or delete your data, write to <a href="mailto:miroga.dream@gmail.com"><b>miroga.dream@gmail.com</b></a> with the nickname you used.</p>
+      <p>Tock needs no email, phone number or password, shows no ads, does not follow you outside the game and does not sell data. It uses the nickname you choose, an <b>anonymous ID (uid)</b> created by Google Firebase Authentication anonymous sign-in and kept on your device (to protect your seat, record your result once per game and link your profile: nickname and dates), a 6-character rejoin code only you can see, and game data (rooms, moves, room chat, wins for the leaderboard), stored on Google Firebase Realtime Database (EU servers). Firebase Authentication keeps the anonymous ID with its creation and last sign-in dates and may log technical connection data (such as the IP address) for security. Data is kept until you ask to delete it. Games with strangers ("Gioca subito") only allow preset chat phrases. To view or delete your data, write to <a href="mailto:miroga.dream@gmail.com"><b>miroga.dream@gmail.com</b></a> with the nickname you used and, if possible, when and in which room you played; we may ask for your rejoin code to confirm the data is yours.</p>
       <p>© 2026 Mig. All rights reserved. The Tock app (code, graphics, icons, sounds and texts) may not be copied, modified or republished without written permission.</p>
     </section>
   </div>

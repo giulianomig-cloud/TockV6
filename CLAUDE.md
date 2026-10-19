@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.16** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.22** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -106,6 +106,83 @@
   quando si mostra (`trLog`, `logColorName`); i test di `LOG_EVENT_TYPES` usano sempre la riga italiana.
 - Nelle partite miste (un telefono in italiano e uno in inglese) ognuno vede la propria lingua; le frasi pronte
   della chat e quelle dei computer si traducono, i messaggi scritti a mano no.
+
+## Sicurezza (piano graduale: passi 0-5 PREPARATI su branch separati; NIENTE pubblicato: aspettare l'ok)
+- Checkpoint prima dei lavori: tag locale e ramo remoto `checkpoint-v6.16` (commit c89c66d). Il proxy rifiuta il push dei tag.
+- `firebase-tests/` (NON fa parte del gioco): emulatore Firebase locale, progetto finto `demo-tock`; strumenti
+  installati SOLO lì (`npm install`, poi `npm test`). Dimostra le falle delle regole attuali, prova il gioco vero
+  in Chromium contro l'emulatore, script di sola lettura per la migrazione della classifica (proposta nel README).
+- v6.17: login ANONIMO (`firebase-auth-compat.js`, `startAnonymousAuth`, `waitAuth` max 4 s, `myUid`). L'uid viene
+  solo SALVATO accanto ai posti (`players[colore].uid`, `draft.uids[token]`); le regole non lo usano ancora. Se il
+  login non riesce (accesso anonimo non attivato in console) si gioca come prima, posto senza uid.
+  `index.html?emu=1` su localhost = emulatore (`FIREBASE_EMULATOR`); sul sito vero non scatta mai.
+- v6.18 (branch `claude/profili-uid`): profilo `profiles/<uid>` = {nome, creatoIl, aggiornatoIl} scritto da
+  `saveMyProfile` (chiamata da `savePlayerShortcut` e da `startMatchmaking`). La rubrica `players/` e la classifica
+  vecchia NON vengono toccate né assegnate. Regole proposte (NON pubblicate) in `firebase-tests/regole/proposte.json`;
+  `database.rules.json` resta quello di produzione. `_config.yml` esclude `firebase-tests/` dal sito (verificato con
+  Jekyll locale: `npm run controlla-sito`).
+- v6.19 (branch `claude/classifica-uid`): `gameId` in ogni partita (`newGameId`, nuovo anche con la rivincita).
+  `creditMyResult` sostituisce `tryClaimLeaderboardCredit`: ognuno scrive SOLO `leaderboard/<uid>` (+1 partita, +1
+  vittoria se ha vinto) e `credited/<stanza>/<gameId>/<uid>` nello stesso update. LIMITE: la vittoria la dichiarano i
+  telefoni → classifica NON sicura finché non c'è il server (README di firebase-tests). Con le regole di oggi la
+  versione nuova NON registra in classifica: va pubblicata insieme a `regole/transizione.json`.
+- v6.20 (branch `claude/posti-protetti`): posti protetti. Ogni posto umano ha l'uid; regole proposte: un posto di un
+  ALTRO uid non si cambia, non si cancella, non diventa computer (controllo `.validate` sulla stanza, vale anche per
+  scritture "profonde"). "Sono io" da un altro telefono = CODICE DI RIENTRO: `seatKeys/<stanza>/<colore>` = {uid, key}
+  (6 lettere/cifre, `ensureMySeatKey`, leggibile solo dal titolare, mostrato in ⚙️ Impostazioni → 🔑) e
+  `seatClaims/<stanza>/<colore>` (la regola controlla il codice). Con lo stesso nome non si prende più il posto di un
+  altro uid (`joinManualRoom`). Le scritture aspettano il login (`waitAuth` in updateState/writeState/claimRoomMode/
+  prenotazione colore). Riciclo delle stanze AUTO permesso dalle regole solo se finite/ferme da 10 min e senza presenza.
+  LIMITI rimasti (servono Cloud Functions): stato di gioco scrivibile da chi conosce il codice, mani leggibili, vittoria
+  dichiarata dai telefoni, chat AUTO libera via codice, versione finta sul proprio colore.
+- Distribuzione prevista: 1) attivare login anonimo in console; 2) pubblicare `regole/transizione.json` + gioco v6.22;
+  3) quando tutti hanno aggiornato, pubblicare `regole/proposte.json`. Con le regole di OGGI la v6.20 funziona ma non
+  registra la classifica, non salva profili/codici e il "Sono io" da altro telefono non è possibile.
+- Vincoli dell'utente: niente scritture sul database di produzione, niente regole pubblicate, niente console, niente
+  servizi a pagamento senza ok esplicito; non cancellare né migrare la classifica attuale.
+- v6.21 (branch `claude/auto-bloccate`): stanze "Gioca subito" bloccate (caso AUTO-1 reale: dopo una caduta di
+  connessione lo stesso telefono finiva due volte in `draft.order` e in tutte e due le coppie). `draft.order` senza
+  doppioni, `maybeStartPairDraw` con 4 telefoni diversi, onDisconnect toglie anche `draft/uids/<token>`,
+  `mmIsStuckLobby` = attesa con coppie sorteggiate, senza posti e senza segni di vita da 10 min → riciclata.
+- v6.22 (branch `claude/riprova`, separato): `updateState` fa al massimo DUE tentativi. Il secondo solo se il primo
+  NON ha scritto nulla (committed false = stanza non in memoria) e la stanza esiste: prima si ascolta la stanza
+  finché arriva (`get()` non basta), poi si riprova; l'ascolto aggiunto si stacca alla fine. Mai due applicazioni
+  della stessa mossa (test `e2e-riprova`). Prima compariva "La mossa non è stata salvata… Riprova" (es. appena
+  partita la partita, quando l'ascolto viene staccato e riattaccato).
+- RIPRISTINO PRONTO: PR #31 (branch `claude/ripristino-v623`, base privacy #30 → v6.22): gioco della v6.16 con numero v6.23
+  (mai tornare a "v6.16": i telefoni già aggiornati vedrebbero gli altri come vecchi; il numero deve superare ogni versione
+  pubblicata). Test del gioco della v6.16; le e2e delle funzioni v6.17-v6.22 si saltano SOLO se il gioco è identico alla
+  v6.16 (`richiede()` in e2e-banco.js, `ripristino-gioco.test.js`). Il vecchio `claude/ripristino-v621` è superato.
+- Fase 0 FATTA (rapporto in chat): regole pubblicate = `database.rules.json`; classifica 2 voci (Yaymaris id della V5
+  NON in rubrica, Giuliano), totali vittorie 3 · partite 5 · vinte 3; AUTO-1 bloccata. Proposte in
+  `firebase-tests/PROPOSTE-DATI.md`; passi manuali Fasi 1-2 in `firebase-tests/FASI-1-2.md` (NON eseguiti).
+
+## Automazione (PR #26, branch `claude/ci-automatica`, base `claude/riprova`; guida in `.github/AUTOMAZIONE.md`)
+- Workflow `Controlli` su ogni PR e su main: Regole del gioco (+ versioni allineate, versione che sale verso main),
+  Workflow sicuri (`.github/scripts/controlla-workflow.js`), Il sito non pubblica i test, Sicurezza Firebase
+  (emulatore, Playwright 1.56.1 in firebase-tests). Controllo da rendere obbligatorio: **"Tutti i controlli"**.
+- Ciclo di correzione: `.claude/skills/steward/SKILL.md` (max 3 tentativi per errore, 6 push, poi rapporto e stop).
+- Rilascio regole/migrazione: `.github/workflows/rilascio.yml` (solo a mano, da main, PROVA di default, spento finché
+  `PRODUZIONE_ATTIVA` ≠ "si"); strumenti in `firebase-tests/rilascio/`. Segreti SOLO in environment `production`
+  limitato a main (mai repository secrets). Verifica del sito dopo ogni push su main (`verifica-sito.yml`).
+- PR #27 (`claude/ci-main` → main): SOLO controlli e documenti (stessi file della #26, già uniti in ci-automatica),
+  per rendere obbligatorio "Tutti i controlli" PRIMA di pubblicare la v6.22. Ordine: unire #27 → creare il ruleset
+  (AUTOMAZIONE.md punto 2) → al rilascio UNA sola PR `claude/ci-automatica` → main (mai la catena una PR alla volta:
+  pubblicherebbe le versioni intermedie). Su branch senza `firebase-tests/` il controllo Firebase dice "niente da
+  provare"; se la cartella viene tolta diventa rosso. Playwright 1.56.1 installato anche globalmente in CI.
+- FATTO: #27 e #28 unite in main (e9194da, sito v6.16); ruleset "Protezione main" attivo (PR obbligatoria,
+  "Tutti i controlli" da GitHub Actions, branch aggiornato, niente force push/cancellazione). "Verifica del sito" aspetta
+  la pubblicazione Pages del commit (API deployments) prima di controllare la versione.
+- Rilascio v6.22: PR #29 (`claude/rilascio-v622` = ci-automatica + main + privacy #30), unita in main il 19/10 dopo le
+  Fasi 1-2. Piano di collaudo: `firebase-tests/COLLAUDO-V622.md`. Ripristino del gioco: PR #31 (v6.23 = gioco v6.16).
+- Fase 1 FATTA dall'utente (19/10: provider Anonimo attivo, v6.16 ok su 2 telefoni).
+- Fase 2 FATTA (19/10, pubblicata dall'utente in console): regole di transizione. Impronta prima `0b0dd43b…707edd5b`
+  (= database.rules.json), dopo = `firebase-tests/regole/transizione.json` (`c0a7d4e2…48622e86`). `controlla-dopo.js`:
+  classifica 2 voci invariata (vittorie 5 · partite 10 · vinte 5), nulla sparito; prove simulatore 4/4 sull'emulatore
+  con le regole copiate dalla console; fase2-prova 7/7 coi dati di dopo. Ritorno = incollare database.rules.json.
+  `database.rules.json` resta quello di PRIMA (backup); le regole in produzione ora sono la transizione.
+- Fase 5 (regole definitive) NON fatta: va decisa a parte, solo quando tutti i telefoni sono sulla v6.22.
+- NON configurato (lo fa l'utente): environment, segreti, variabili, auto-merge.
 
 ## Diritti (v6.09)
 - "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`

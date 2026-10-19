@@ -1,0 +1,94 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "games": {
+      "$room": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "presence": {
+      "$room": {
+        ".read": true,
+        "$color": {
+          "$conn": {
+            ".write": true
+          }
+        }
+      }
+    },
+    "players": {
+      ".read": true,
+      "$id": {
+        ".write": "!data.exists()"
+      }
+    },
+    "leaderboard": {
+      ".read": true,
+      "$id": {
+        ".write": true
+      }
+    },
+    "codes": {
+      "$code": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "stats": {
+      "$name": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "profiles": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChild('nome')",
+        "nome": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+        },
+        "creatoIl": {
+          ".validate": "newData.isNumber()"
+        },
+        "aggiornatoIl": {
+          ".validate": "newData.isNumber()"
+        },
+        "$altro": {
+          ".validate": false
+        }
+      }
+    },
+    "credited": {
+      "$room": {
+        "$game": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid && !data.exists()",
+            ".validate": "newData.val() === true"
+          }
+        }
+      }
+    },
+    "seatKeys": {
+      "$room": {
+        "$color": {
+          ".read": "auth != null && data.child('uid').val() === auth.uid",
+          ".write": "auth != null && root.child('games').child($room).child('players').child($color).child('uid').val() === auth.uid",
+          ".validate": "newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val().length >= 6 && newData.child('key').val().length <= 12"
+        }
+      }
+    },
+    "seatClaims": {
+      "$room": {
+        "$color": {
+          ".read": false,
+          ".write": "auth != null && newData.exists()",
+          ".validate": "newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val() === root.child('seatKeys').child($room).child($color).child('key').val()"
+        }
+      }
+    }
+  }
+}

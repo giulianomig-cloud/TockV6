@@ -1273,6 +1273,8 @@ html:not([data-skin="arcade"]) #picker-wrap:has(.sx-box) { background: var(--bx-
 .sx-k4, .sx-k4 * { color: #3A2A55; } .sx-k4 { background: linear-gradient(160deg,#EAF4FF,#F7F1FF 55%,#FFE7D2); }
 .sx-k5, .sx-k5 * { color: #7CF7FF; } .sx-k5 { background: #120A3A; box-shadow: inset 0 0 0 2px #FF2BD6, var(--bx-shadow); }
 .sx-list { background: var(--bx-card); border-radius: 22px; box-shadow: var(--bx-shadow); overflow: hidden; }
+.sx-keylist { margin-top: 12px; }
+.sx-key { font-weight: 800; letter-spacing: .14em; color: var(--bx-ink); white-space: nowrap; }
 .sx-list .set-row { border-top: 1px solid var(--bx-line); }
 .sx-list .set-row:first-child { border-top: none; }
 .sx-acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -3346,6 +3348,7 @@ html:not([data-skin]) .dealer-pile .card-btn.dealer-under { z-index: 3; filter: 
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" crossorigin="anonymous"></script>
 
 <script>
 // Configurazione del progetto Firebase "ttok-21ebe".
@@ -4056,6 +4059,12 @@ function isSeven(card) { return rankOf(card) === "7"; }
 // pos >= 1000 -> 1000+home-cell-index (0..3)
 // ------------------------------------------------------------
 
+// Identificativo di una singola partita (v6.19): serve alla classifica per
+// registrare ogni risultato una volta sola. Solo lettere e cifre (va in un percorso).
+function newGameId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
 function newGameState(playersByColor, roomMode) {
   const hands = {}, pawns = {};
   for (const c of COLORS) {
@@ -4063,6 +4072,7 @@ function newGameState(playersByColor, roomMode) {
     pawns[c] = [-1, -1, -1, -1];
   }
   return {
+    gameId: newGameId(),
     phase: "lobby",
     players: playersByColor,
     // "manual" = ognuno sceglie subito il proprio colore (comportamento
@@ -5222,6 +5232,7 @@ function checkWin(state) {
 // Starts a fresh game in the same room, keeping the same players/names —
 // used by the "nuova partita" button on the win screen.
 function resetForNewGame(state) {
+  state.gameId = newGameId(); // nuova partita = nuovo identificativo (classifica, v6.19)
   for (const c of COLORS) {
     state.pawns[c] = [-1, -1, -1, -1];
     state.hands[c] = [];
@@ -5231,7 +5242,7 @@ function resetForNewGame(state) {
   state.log = ["Nuova partita nella stessa stanza."];
   state.winnerTeam = null;
   // Segni "vittoria già accreditata in classifica" (vedi
-  // tryClaimLeaderboardCredit): vanno azzerati
+  // creditMyResult; dalla v6.19 conta gameId, nuovo a ogni partita): vanno azzerati
   // a ogni rivincita, altrimenti dalla 2ª partita nella stessa stanza in poi
   // nessuna vittoria veniva più contata (segnalato: "Francesco ha vinto due
   // partite e non risulta").
@@ -5357,6 +5368,10 @@ function trColors(s) {
 }
 
 const I18N_EN = {
+  // --- Codice di rientro (v6.20) ---
+  "Per riprendere il posto serve il codice di rientro: lo trova chi era seduto qui, sul suo telefono, in ⚙️ Impostazioni.": "To take back this seat you need the rejoin code: whoever was sitting here can find it on their phone under ⚙️ Settings.",
+  "Codice di rientro sbagliato.": "Wrong rejoin code.",
+  "Codice per rientrare da un altro telefono": "Code to rejoin from another phone",
   // --- Home ---
   "Pronto per": "Ready for",
   "una partita?": "a game?",
@@ -5987,6 +6002,13 @@ let app, db;
 function initFirebase() {
   app = firebase.initializeApp(FIREBASE_CONFIG);
   db = firebase.database();
+  // Solo per le prove sul computer (indirizzo localhost + ?emu=1): usa
+  // l'emulatore di Firebase invece del database vero. Sul sito vero non scatta mai.
+  if (FIREBASE_EMULATOR) {
+    db.useEmulator("127.0.0.1", 9000);
+    try { if (firebase.auth) firebase.auth().useEmulator("http://127.0.0.1:9099", { disableWarnings: true }); } catch (e) {}
+  }
+  startAnonymousAuth();
   // Differenza fra l'orologio del telefono e quello del server: serve a
   // confrontare gli orari scritti da telefoni diversi (vedi serverNow).
   try { db.ref(".info/serverTimeOffset").on("value", (s) => { serverTimeOffset = Number(s.val()) || 0; }); } catch (e) {}
@@ -6005,6 +6027,50 @@ function initFirebase() {
       proto.__timeoutPatched = true;
     }
   } catch (e) { console.warn("patch get", e); }
+}
+
+const FIREBASE_EMULATOR = (() => {
+  try {
+    return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("emu") === "1";
+  } catch (e) { return false; }
+})();
+
+// ---- Login anonimo (v6.17) -------------------------------------------
+// Ogni telefono riceve da Firebase un ID permanente (uid) che non dipende dal
+// nome, senza chiedere nulla alla persona. Per ora l'uid viene solo SALVATO
+// accanto ai posti (players[colore].uid, draft.uids[token]): le regole del
+// database non lo usano ancora, quindi se il login non riesce (es. accesso
+// anonimo non attivato in console, nessuna rete) il gioco funziona come prima.
+let myUid = null;
+let _authReady = null;
+function startAnonymousAuth() {
+  _authReady = new Promise((resolve) => {
+    let auth;
+    try {
+      if (!firebase.auth) return resolve(null);
+      auth = firebase.auth();
+    } catch (e) { return resolve(null); }
+    let tried = false;
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        myUid = user.uid;
+        resolve(user.uid);
+      } else if (!tried) {
+        tried = true;
+        auth.signInAnonymously().catch((e) => {
+          console.warn("login anonimo non riuscito:", e && e.code);
+          resolve(null);
+        });
+      }
+    });
+  });
+}
+// Aspetta il login al massimo `ms` millisecondi: l'accesso resta immediato
+// anche se Firebase è lento o il login non è disponibile.
+function waitAuth(ms = 4000) {
+  if (myUid) return Promise.resolve(myUid);
+  if (!_authReady) return Promise.resolve(null);
+  return Promise.race([_authReady, new Promise((r) => setTimeout(() => r(myUid), ms))]);
 }
 
 // Ora "del server": gli orologi dei telefoni possono essere sfasati anche di
@@ -6108,6 +6174,68 @@ function savePlayerShortcut(id, nome) {
   try {
     localStorage.setItem("tock-player", JSON.stringify({ id, nome }));
   } catch (e) {}
+  saveMyProfile(nome);
+}
+
+// ---------------- Codice di rientro del proprio posto (v6.20) ---------
+// seatKeys/<stanza>/<colore> = { uid, key }: lo legge SOLO chi siede su quel posto
+// (Impostazioni → "🔑"). Per riprendere il posto da un ALTRO telefono ("Sono io")
+// bisogna scriverlo: senza codice le regole non lasciano cambiare il posto di un
+// altro, anche conoscendo il codice della stanza.
+const SEAT_KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // niente 0/O, 1/I: si leggono male
+let mySeatKey = null;
+let _seatKeyFor = null;
+function newSeatKey() {
+  const a = new Uint32Array(6);
+  crypto.getRandomValues(a);
+  return Array.from(a, (n) => SEAT_KEY_ALPHABET[n % SEAT_KEY_ALPHABET.length]).join("");
+}
+async function ensureMySeatKey(state) {
+  if (!myRoomId || !myColor || !myUid || !state || !state.players) return;
+  const seat = state.players[myColor];
+  if (!seat || seat.isBot || seat.uid !== myUid) return;
+  const forKey = myRoomId + "/" + myColor + "/" + myUid;
+  if (_seatKeyFor === forKey) return;
+  _seatKeyFor = forKey;
+  mySeatKey = null;
+  const ref = db.ref("seatKeys/" + myRoomId + "/" + myColor);
+  try {
+    const v = (await ref.get()).val();
+    if (v && v.uid === myUid && v.key) { mySeatKey = v.key; return; }
+  } catch (e) {
+    // non leggibile: il codice è di chi sedeva qui prima → se ne scrive uno nuovo
+  }
+  const key = newSeatKey();
+  try {
+    await ref.set({ uid: myUid, key });
+    mySeatKey = key;
+  } catch (e) {
+    _seatKeyFor = null;
+    console.warn("codice di rientro non salvato:", e && (e.code || e.message));
+  }
+}
+
+// ---------------- Profilo legato all'uid (v6.18) ----------------------
+// profiles/<uid> = { nome, creatoIl, aggiornatoIl }: l'identità vera è l'uid
+// del login anonimo, il nome è solo un'etichetta che si può cambiare. Ognuno
+// scrive SOLO il proprio profilo. Non tocca la rubrica players/ né la
+// classifica esistente (i vecchi profili non vengono assegnati a nessuno).
+// Se il login non c'è o le regole del database non lo permettono ancora,
+// non succede nulla: il gioco va avanti come prima.
+const PROFILE_NAME_MAX = 40;
+async function saveMyProfile(nome) {
+  const uid = await waitAuth();
+  const n = String(nome || "").trim().replace(/\s+/g, " ").slice(0, PROFILE_NAME_MAX);
+  if (!uid || !n || !db) return;
+  try {
+    const ref = db.ref("profiles/" + uid);
+    const upd = { nome: n, aggiornatoIl: firebase.database.ServerValue.TIMESTAMP };
+    const created = await ref.child("creatoIl").get();
+    if (!created.exists()) upd.creatoIl = firebase.database.ServerValue.TIMESTAMP;
+    await ref.update(upd);
+  } catch (e) {
+    console.warn("profilo non salvato:", e && (e.code || e.message));
+  }
 }
 
 // ---------------- Classifica generale (v5) ----------------------------
@@ -6119,53 +6247,47 @@ function leaderboardRef() {
   return db.ref("leaderboard");
 }
 
-// Quando una partita finisce, esattamente UN client deve accreditare la
-// vittoria ai due giocatori della squadra vincitrice — ma tutti e 4 i
-// device collegati alla stanza vedono la transizione a "finished" più o
-// meno nello stesso momento (ognuno con il proprio ascoltatore realtime),
-// quindi serve un modo per far sì che uno solo di loro esegua davvero
-// l'incremento. Si usa un piccolo "flag di reclamo" dentro la stanza
-// stessa (games/{roomId}/leaderboardClaimed), scritto con una sua propria
-// transazione: la transazione riesce (committed:true) SOLO per il primo
-// client che la esegue mentre il flag è ancora assente — a tutti gli
-// altri Firebase la nega (il valore corrente non è più quello atteso),
-// quindi solo il "vincitore" del reclamo procede a scrivere la classifica.
-// Niente a che vedere con la transazione che applica le mosse di gioco:
-// sono percorsi Firebase separati (games/{roomId} vs leaderboard/...), non
-// si può renderli atomici insieme, ma non serve — basta che l'incremento
-// avvenga una volta sola, non che sia nello stesso istante della mossa.
-async function tryClaimLeaderboardCredit(state) {
+// Classifica (v6.19): a fine partita OGNI telefono registra SOLO il proprio
+// risultato in leaderboard/<uid>, una volta per partita: il segno
+// credited/<stanza>/<gameId>/<uid> si scrive insieme alla classifica (nello
+// stesso update) e le regole proposte non lo lasciano riscrivere. Le voci vecchie
+// (chiavi della rubrica, iniziano con "-") non vengono più toccate.
+// LIMITE NOTO: chi ha vinto lo dice ancora il telefono (lo stato della partita è
+// scritto dai giocatori). Finché non c'è un controllo sul server (Cloud Functions)
+// la classifica NON è a prova di imbroglio: vedi firebase-tests/README.md.
+// Chi esce prima della fine viene contato quando riapre la partita finita.
+async function creditMyResult(state) {
   if (!state || !state.winnerTeam || !myRoomId) return;
+  const uid = await waitAuth();
+  if (!uid) return;
+  const color = COLORS.find((c) => state.players[c] && !state.players[c].isBot && state.players[c].uid === uid);
+  if (!color) return; // non sono seduto con questo uid (o sono un computer)
+  const room = myRoomId;
   try {
-    const claimResult = await roomRef(myRoomId)
-      .child("leaderboardClaimed")
-      .transaction((cur) => (cur ? undefined : true));
-    if (!claimResult.committed) return; // già reclamato da un altro device
-    const winners = COLORS.filter((c) => TEAM_OF[c] === state.winnerTeam);
-    const updates = {};
-    for (const c of winners) {
-      const p = state.players && state.players[c];
-      if (!p || p.isBot || !p.playerId) continue; // bot e giocatori senza rubrica non entrano in classifica
-      updates["leaderboard/" + p.playerId + "/vittorie"] = firebase.database.ServerValue.increment(1);
-      updates["leaderboard/" + p.playerId + "/nome"] = p.name; // tiene il nome visualizzato aggiornato
+    let gameId = state.gameId;
+    if (!gameId) {
+      // stanza creata da una versione precedente: le si dà ora un identificativo
+      const res = await roomRef(room).child("gameId").transaction((cur) => cur || newGameId(), undefined, false);
+      gameId = res && res.snapshot && res.snapshot.val();
+      if (!gameId) return;
     }
-    // Media vittorie/partite: si contano le partite giocate da TUTTI i
-    // giocatori veri (anche chi ha perso). `partite` e `vinte` partono da zero
-    // da quando esistono — `vittorie` invece include anche le vittorie di prima,
-    // quando le partite giocate non venivano contate: per questo la media usa
-    // solo questi due campi, non `vittorie`.
-    for (const c of COLORS) {
-      const p = state.players && state.players[c];
-      if (!p || p.isBot || !p.playerId) continue;
-      updates["leaderboard/" + p.playerId + "/partite"] = firebase.database.ServerValue.increment(1);
-      updates["leaderboard/" + p.playerId + "/nome"] = p.name;
-      if (TEAM_OF[c] === state.winnerTeam) {
-        updates["leaderboard/" + p.playerId + "/vinte"] = firebase.database.ServerValue.increment(1);
-      }
-    }
-    if (Object.keys(updates).length > 0) await db.ref().update(updates);
+    const mark = "credited/" + room + "/" + gameId + "/" + uid;
+    if ((await db.ref(mark).get()).exists()) return; // già registrata
+    const cur = (await db.ref("leaderboard/" + uid).get()).val() || {};
+    const won = TEAM_OF[color] === state.winnerTeam ? 1 : 0;
+    await db.ref().update({
+      [mark]: true,
+      ["leaderboard/" + uid]: {
+        nome: String(state.players[color].name || "?").slice(0, 60),
+        partite: (cur.partite || 0) + 1,
+        vinte: (cur.vinte || 0) + won,
+        vittorie: (cur.vittorie || 0) + won,
+        ultimaStanza: room,
+        ultimaPartita: gameId,
+      },
+    });
   } catch (e) {
-    console.error(e);
+    console.warn("risultato non registrato in classifica:", e && (e.code || e.message));
   }
 }
 
@@ -6303,7 +6425,8 @@ function setupOwnPresence(roomId, color) {
   }
 }
 
-function writeState(roomId, state) {
+async function writeState(roomId, state) {
+  await waitAuth();
   return roomRef(roomId).set(state);
 }
 
@@ -6336,6 +6459,7 @@ function incrementStat(name) {
 // persone la creano nello stesso istante, vince chi arriva per primo e
 // l'altro trova comunque la modalità già decisa nel risultato restituito.
 async function claimRoomMode(roomId, mode) {
+  await waitAuth(); // v6.20: con le regole nuove si scrive solo dopo il login
   const ref = roomRef(roomId);
   let createdNew = false;
   const result = await ref.transaction((current) => {
@@ -6356,57 +6480,74 @@ async function claimRoomMode(roomId, mode) {
 async function updateState(roomId, mutatorFn) {
   // read-modify-write with a transaction so two players acting at the
   // same instant don't overwrite each other.
+  await waitAuth(); // v6.20: con le regole nuove si scrive solo dopo il login (subito, se è già fatto)
   const ref = roomRef(roomId);
-  let caughtError = null;
-  let justWon = false;
-  const result = await ref
-    .transaction((current) => {
-      // `current === null` qui non è una prova affidabile che la stanza
-      // sia sparita: può capitare anche quando questo client semplicemente
-      // non ha ancora quel path in cache locale (es. subito dopo essere
-      // entrati, prima che un ascoltatore stabile l'abbia letto). Si
-      // aborta comunque questo TENTATIVO (Firebase può comunque rifare da
-      // solo la callback con lo stato vero se la scrittura va in
-      // conflitto), ma il verdetto "davvero cancellata" si decide SOLO
-      // dopo, con una lettura diretta indipendente — vedi sotto.
-      if (current === null) return;
-      try {
-        const copy = normalizeState(JSON.parse(JSON.stringify(current)));
-        const wasFinished = !!copy.winnerTeam;
-        mutatorFn(copy);
-        // riflette solo l'ULTIMO tentativo della transazione (in caso di
-        // retry per contesa la callback può girare più volte): se quello che
-        // viene poi davvero confermato è quello che ha fatto scattare la
-        // vittoria, va bene contarlo una volta sola qui sotto.
-        justWon = !wasFinished && !!copy.winnerTeam;
-        return copy;
-      } catch (e) {
-        caughtError = e;
-        return undefined; // abort this transaction attempt
+  // v6.22: al massimo DUE tentativi. Il secondo parte solo se il primo non ha scritto NULLA
+  // (committed === false: la callback ha restituito undefined perché la stanza non era in memoria)
+  // e la stanza esiste davvero, quindi la mossa viene applicata una volta sola. Prima del secondo
+  // tentativo si ascolta la stanza finché arriva (rileggerla con get() non basta: la transazione
+  // usa la memoria degli ascolti); l'ascolto aggiunto si stacca alla fine.
+  let ascoltoTemporaneo = null;
+  try {
+    for (let tentativo = 1; ; tentativo++) {
+      let caughtError = null;
+      let justWon = false;
+      const result = await ref
+        .transaction((current) => {
+          // `current === null` qui non è una prova affidabile che la stanza
+          // sia sparita: può capitare anche quando questo client semplicemente
+          // non ha ancora quel path in cache locale (es. subito dopo essere
+          // entrati, prima che un ascoltatore stabile l'abbia letto). Si
+          // aborta questo TENTATIVO; il verdetto "davvero cancellata" si
+          // decide SOLO dopo, con una lettura diretta indipendente — vedi sotto.
+          if (current === null) return;
+          try {
+            const copy = normalizeState(JSON.parse(JSON.stringify(current)));
+            const wasFinished = !!copy.winnerTeam;
+            mutatorFn(copy);
+            // riflette solo l'ULTIMO tentativo della transazione (in caso di
+            // retry per contesa la callback può girare più volte): se quello che
+            // viene poi davvero confermato è quello che ha fatto scattare la
+            // vittoria, va bene contarlo una volta sola qui sotto.
+            justWon = !wasFinished && !!copy.winnerTeam;
+            return copy;
+          } catch (e) {
+            caughtError = e;
+            return undefined; // abort this transaction attempt
+          }
+        }, undefined, false)
+        .catch((e) => {
+          caughtError = e;
+          return null;
+        });
+      if (caughtError) {
+        console.error("updateState error:", caughtError);
+        throw caughtError;
       }
-    }, undefined, false)
-    .catch((e) => {
-      caughtError = e;
-      return null;
-    });
-  if (caughtError) {
-    console.error("updateState error:", caughtError);
-    throw caughtError;
-  }
-  if (result && result.committed === false) {
-    // La transazione non ha scritto nulla: può essere perché la callback
-    // ha visto `current === null` (stanza davvero cancellata, OPPURE solo
-    // non ancora in cache — vedi sopra) o per un conflitto di scrittura.
-    // Una lettura diretta e indipendente qui toglie ogni ambiguità, invece
-    // di indovinare dal solo esito della transazione.
-    const snap = await ref.get().catch(() => null);
-    if (!snap || !snap.exists()) {
-      throw Object.assign(new Error("Questa stanza non esiste più (forse è stata cancellata)."), { code: "ROOM_MISSING" });
+      if (result && result.committed === false) {
+        // La transazione non ha scritto nulla: la callback ha visto `current === null`
+        // (stanza davvero cancellata, OPPURE solo non ancora in memoria — vedi sopra).
+        // Una lettura diretta e indipendente toglie ogni ambiguità.
+        const snap = await ref.get().catch(() => null);
+        if (!snap || !snap.exists()) {
+          throw Object.assign(new Error("Questa stanza non esiste più (forse è stata cancellata)."), { code: "ROOM_MISSING" });
+        }
+        if (tentativo === 1) {
+          ascoltoTemporaneo = await new Promise((resolve) => {
+            const cb = () => resolve(cb);
+            ref.on("value", cb, () => resolve(cb));
+            setTimeout(() => resolve(cb), 5000);
+          });
+          continue;
+        }
+        throw new Error("La mossa non è stata salvata (transazione non completata). Riprova.");
+      }
+      if (justWon && result && result.committed !== false) incrementStat("gamesFinished");
+      return result;
     }
-    throw new Error("La mossa non è stata salvata (transazione non completata). Riprova.");
+  } finally {
+    if (ascoltoTemporaneo) ref.off("value", ascoltoTemporaneo);
   }
-  if (justWon && result && result.committed !== false) incrementStat("gamesFinished");
-  return result;
 }
 
 </script>
@@ -7976,7 +8117,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.16";
+const APP_VERSION = "v6.22";
 
 let myColor = null;
 let myRoomId = null;
@@ -8728,10 +8869,24 @@ async function recoverByName(roomId, chosenName, rowBtn) {
     // claim-token già usato dalla modalità manuale, semplicemente
     // riassegnato a questo dispositivo.
     const newToken = getOrCreateClaimToken(roomId, match);
+    await waitAuth();
+    // v6.20: il posto è di un altro telefono (altro uid) → serve il codice di rientro.
+    if (claim.uid && claim.uid !== myUid) {
+      const typed = prompt("Per riprendere il posto serve il codice di rientro: lo trova chi era seduto qui, sul suo telefono, in ⚙️ Impostazioni.");
+      const key = String(typed || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!key) { fail(); return; }
+      try {
+        await db.ref("seatClaims/" + roomId + "/" + match).set({ uid: myUid, key });
+      } catch (e) {
+        fail();
+        showToast("Codice di rientro sbagliato.");
+        return;
+      }
+    }
     // Si tengono tutti i campi del posto (playerId compreso: prima andava
     // perso, e le partite giocate dopo un rientro non contavano più in
     // classifica generale); cambia solo il token, che passa a questo telefono.
-    await roomRef(roomId).child("players").child(match).set({ ...claim, token: newToken });
+    await roomRef(roomId).child("players").child(match).set({ ...claim, token: newToken, uid: myUid || null });
     myColor = match;
     myRoomId = roomId;
     myName = claim.name;
@@ -9204,6 +9359,7 @@ async function selectColor(c, btn) {
 
 async function joinManualRoom(roomId) {
   unlockAudio();
+  await waitAuth();
   const typed = $("#name-input").value.trim();
   if (!myColor) return showToast("Scegli un colore.");
   myRoomId = roomId;
@@ -9247,13 +9403,16 @@ async function joinManualRoom(roomId) {
       try {
         if (current === null) {
           const players = {};
-          players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null };
+          players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null, uid: myUid || null };
           return newGameState(players, "manual");
         }
         const state = normalizeState(JSON.parse(JSON.stringify(current)));
         const existing = state.players && state.players[myColor];
+        // Stesso nome = stessa persona SOLO se il posto non è di un altro telefono (v6.20: uid
+        // diverso → il posto si riprende solo con "Sono io" e il codice di rientro).
         const sameName = existing && existing.name && myName &&
-          existing.name.trim().toLowerCase() === myName.trim().toLowerCase();
+          existing.name.trim().toLowerCase() === myName.trim().toLowerCase() &&
+          (!existing.uid || existing.uid === myUid);
         if (existing && existing.token && existing.token !== claimToken && !sameName) {
           blockedReason = { kind: "color", by: existing.name || colorLabel(myColor) };
           return undefined; // annulla il tentativo, non scrivere nulla
@@ -9279,7 +9438,7 @@ async function joinManualRoom(roomId) {
           return undefined;
         }
         if (!state.players) state.players = {};
-        state.players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null };
+        state.players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null, uid: myUid || null };
         return state;
       } catch (e) {
         caughtError = e;
@@ -9502,13 +9661,14 @@ function reserveColorPending(roomId, color) {
     lastPendingRefresh = Date.now();
     // Restituisce true (prenotato), false (lo ha già un altro telefono) o
     // null (errore/rete): serve a "Siediti" per mostrare l'esito sul pulsante.
-    return roomRef(roomId)
-      .child("pending")
-      .child(color)
-      .transaction((current) => {
-        if (current && current.token !== token && freshPendingColor({ x: current }, "x")) return undefined;
-        return { token, ts: serverNow() };
-      })
+    return waitAuth() // v6.20: con le regole nuove si scrive solo dopo il login
+      .then(() => roomRef(roomId)
+        .child("pending")
+        .child(color)
+        .transaction((current) => {
+          if (current && current.token !== token && freshPendingColor({ x: current }, "x")) return undefined;
+          return { token, ts: serverNow() };
+        }))
       .then((r) => !!(r && r.committed))
       .catch(() => null);
   } catch (e) {
@@ -9624,6 +9784,7 @@ function mmPruneMyDuplicates(d, keep) {
     if (seen && serverNow() - seen < 25000) return;
     delete d.players[t];
     delete d.playerIds[t];
+    if (d.uids) delete d.uids[t];
     if (d.seen) delete d.seen[t];
     if (Array.isArray(d.order)) d.order = d.order.filter((x) => x !== t);
   });
@@ -9635,6 +9796,7 @@ function mmPruneStale(d, keep) {
     if (t === keep || !mmIsStale(d, t)) return;
     delete d.players[t];
     if (d.playerIds) delete d.playerIds[t];
+    if (d.uids) delete d.uids[t];
     if (d.seen) delete d.seen[t];
     if (Array.isArray(d.order)) d.order = d.order.filter((x) => x !== t);
   });
@@ -9652,7 +9814,18 @@ function mmLastActivity(st) {
   return t;
 }
 function mmFingerprint(st) {
-  return st.phase + "|" + (st.turnStartedAt || 0) + "|" + (st.log ? st.log.length : 0);
+  return st.phase + "|" + (st.turnStartedAt || 0) + "|" + (st.log ? st.log.length : 0) + "|" +
+    (st.draft && Array.isArray(st.draft.order) ? st.draft.order.join(",") : "");
+}
+// v6.21: stanza rimasta "in attesa" con le coppie già sorteggiate ma che non può più partire (es. lo
+// stesso giocatore due volte, come AUTO-1): nessun posto al tavolo e nessun segno di vita da 10 minuti.
+// Si ricicla come una partita abbandonata. Non contiene punteggi: si perde solo l'attesa bloccata.
+function mmIsStuckLobby(st) {
+  if (!st || st.roomMode !== "draw" || st.phase !== "lobby" || !st.draft || !st.draft.pairDraw) return false;
+  if (st.players && Object.keys(st.players).length > 0) return false;
+  const seen = Object.values(st.draft.seen || {}).map(Number).filter((n) => n > 0);
+  const last = seen.length ? Math.max(...seen) : 0;
+  return serverNow() - last > MM_ABANDONED_MS;
 }
 // Una partita già cominciata si può riusare solo se nessuno è collegato e
 // (è finita, oppure è ferma da più di MM_ABANDONED_MS).
@@ -9687,7 +9860,7 @@ async function mmFindRoom() {
     for (let i = 0; i < ids.length; i++) {
       const st = states[i];
       if (!st || mmIsWaitingRoom(st)) return { roomId: ids[i], recycle: null };
-      if (mmIsAbandoned(st, presence[i])) return { roomId: ids[i], recycle: mmFingerprint(st) };
+      if (mmIsAbandoned(st, presence[i]) || mmIsStuckLobby(st)) return { roomId: ids[i], recycle: mmFingerprint(st) };
     }
   }
   return null;
@@ -9729,18 +9902,24 @@ async function mmJoinRoom(roomId, recycle, token) {
       if (current === null) st = newGameState({}, "draw");
       else {
         st = normalizeState(JSON.parse(JSON.stringify(current)));
-        if (recycle && st.phase !== "lobby" && mmFingerprint(st) === recycle) st = newGameState({}, "draw");
+        if (recycle && (st.phase !== "lobby" || mmIsStuckLobby(st)) && mmFingerprint(st) === recycle) st = newGameState({}, "draw");
         else if (!(st.draft && st.draft.players && st.draft.players[token]) && !mmIsWaitingRoom(st)) return undefined;
       }
       const d = st.draft;
       mmPruneStale(d, token);
       if (!d.seen) d.seen = {};
       d.seen[token] = serverNow();
-      if (!d.players[token]) d.order.push(token);
+      // v6.21: chi perde la connessione viene tolto da draft.players (onDisconnect) ma restava in
+      // draft.order; al rientro veniva aggiunto una seconda volta (segnalato: AUTO-1 bloccata con
+      // lo stesso giocatore in tutte e due le squadre). Ora l'elenco non ha mai doppioni.
+      d.order = d.order.filter((t, i, a) => a.indexOf(t) === i);
+      if (!d.order.includes(token)) d.order.push(token);
       mmPruneMyDuplicates(d, token);
       d.players[token] = mmUniqueName(d.players, token, myName);
       if (!d.playerIds) d.playerIds = {};
       d.playerIds[token] = myPlayerId || null;
+      if (!d.uids) d.uids = {};
+      d.uids[token] = myUid || null;
       if (!d.botTokens) d.botTokens = {};
       maybeStartPairDraw(st);
       mmAutoTeams(st);
@@ -9759,6 +9938,7 @@ function mmArmDisconnect(roomId, token) {
   base.child("players/" + token).onDisconnect().remove().catch(() => {});
   base.child("playerIds/" + token).onDisconnect().remove().catch(() => {});
   base.child("seen/" + token).onDisconnect().remove().catch(() => {});
+  base.child("uids/" + token).onDisconnect().remove().catch(() => {});
 }
 function mmDisarmDisconnect(roomId, token) {
   if (!roomId || !token) return;
@@ -9766,6 +9946,7 @@ function mmDisarmDisconnect(roomId, token) {
   base.child("players/" + token).onDisconnect().cancel().catch(() => {});
   base.child("playerIds/" + token).onDisconnect().cancel().catch(() => {});
   base.child("seen/" + token).onDisconnect().cancel().catch(() => {});
+  base.child("uids/" + token).onDisconnect().cancel().catch(() => {});
 }
 
 // Segno di vita mentre si aspetta (+ pulizia dei posti fantasma degli altri).
@@ -9793,6 +9974,7 @@ async function startMatchmaking() {
   if (!saved || !saved.nome) return vtGo(null, null, () => renderMatchNameScreen());
   myName = saved.nome;
   myPlayerId = saved.id || null;
+  saveMyProfile(saved.nome);
   mmSearch();
 }
 
@@ -9842,6 +10024,7 @@ async function mmSearch() {
   mm = { roomId: null, token: null, since: Date.now(), busy: true };
   mmRenderKey = null;
   renderMatchWaiting(null);
+  await waitAuth();
   try {
     for (let attempt = 0; attempt < 6 && mm; attempt++) {
       const found = await mmFindRoom();
@@ -9905,6 +10088,7 @@ async function mmCancel() {
       if (!st || !st.draft || !st.draft.players || st.draft.pairDraw) return undefined;
       delete st.draft.players[cur.token];
       if (st.draft.playerIds) delete st.draft.playerIds[cur.token];
+      if (st.draft.uids) delete st.draft.uids[cur.token];
       if (st.draft.seen) delete st.draft.seen[cur.token];
       if (Array.isArray(st.draft.order)) st.draft.order = st.draft.order.filter((t) => t !== cur.token);
       // rimasti solo computer? si svuota la stanza, così è subito libera
@@ -10099,6 +10283,7 @@ function renderDraftNameScreen(roomId) {
 
 async function joinDraftRoom(roomId) {
   unlockAudio();
+  await waitAuth();
   const typed = $("#name-input").value.trim();
   if (!typed) return showToast("Inserisci il tuo nome.");
   // Rubrica (v5): vedi il commento gemello in joinManualRoom.
@@ -10133,6 +10318,8 @@ async function joinDraftRoom(roomId) {
           state.draft.order.push(myToken);
           if (!state.draft.playerIds) state.draft.playerIds = {};
           state.draft.playerIds[myToken] = myPlayerId || null;
+          if (!state.draft.uids) state.draft.uids = {};
+          state.draft.uids[myToken] = myUid || null;
           return state;
         }
         const state = normalizeState(JSON.parse(JSON.stringify(current)));
@@ -10158,6 +10345,8 @@ async function joinDraftRoom(roomId) {
         state.draft.players[myToken] = myName;
         if (!state.draft.playerIds) state.draft.playerIds = {};
         state.draft.playerIds[myToken] = myPlayerId || null;
+        if (!state.draft.uids) state.draft.uids = {};
+        state.draft.uids[myToken] = myUid || null;
         maybeStartPairDraw(state);
         return state;
       } catch (e) {
@@ -10279,8 +10468,11 @@ function maybeStartPairDraw(state) {
   const d = state.draft;
   if (!d || d.pairDraw) return;
   if (Object.keys(d.players).length !== 4) return;
-  const tokens = d.order.filter((t) => d.players[t]).slice(0, 4);
-  const shuffled = shuffle(tokens);
+  // v6.21: 4 telefoni DIVERSI anche se l'elenco d'ordine avesse doppioni (o qualcuno mancasse).
+  const tokens = d.order.filter((t, i, a) => d.players[t] && a.indexOf(t) === i);
+  for (const t of Object.keys(d.players)) if (!tokens.includes(t)) tokens.push(t);
+  if (tokens.length < 4) return;
+  const shuffled = shuffle(tokens.slice(0, 4));
   d.pairDraw = { pairs: [[shuffled[0], shuffled[1]], [shuffled[2], shuffled[3]]] };
 }
 
@@ -10323,7 +10515,7 @@ function maybeFinalizeDraft(state) {
     const botLevel = d.botTokens && d.botTokens[token];
     state.players[color] = botLevel
       ? { name: d.players[token], token, isBot: true, botLevel }
-      : { name: d.players[token], token, playerId: (d.playerIds && d.playerIds[token]) || null };
+      : { name: d.players[token], token, playerId: (d.playerIds && d.playerIds[token]) || null, uid: (d.uids && d.uids[token]) || null };
   }
   // A differenza della modalità manuale (dove tutti scelgono il proprio
   // colore da soli e quindi c'è sempre qualcuno pronto a cliccare "Inizia
@@ -13173,6 +13365,7 @@ function onStateChange(state) {
       if (!document.getElementById("hand-wrap")) return;
     }
   }
+  ensureMySeatKey(state).catch(() => {});
   maybeAdvanceBotTurn(state);
   maybeAdvanceBotChat(state);
   maybePlaySounds(state);
@@ -13218,7 +13411,7 @@ function onStateChange(state) {
     }, Math.max(0, (_winCelebrateUntil || 0) - Date.now()));
     if (!_leaderboardClaimAttempted) {
       _leaderboardClaimAttempted = true;
-      tryClaimLeaderboardCredit(state).catch(() => {});
+      creditMyResult(state).catch(() => {});
     }
   } else {
     _leaderboardClaimAttempted = false;
@@ -14901,6 +15094,13 @@ function openSettingsPanel(keepScroll) {
       el("button", { class: "sx-act", onclick: () => { closePicker(); openTutorial(); } }, el("span", { class: "ic" }, "🎓"), "Impara"),
       el("button", { class: "sx-act", onclick: () => { closePicker(); shareInviteLink(myRoomId); } }, el("span", { class: "ic" }, "📤"), "Condividi")
     ),
+    mySeatKey
+      ? el(
+          "div",
+          { class: "sx-list sx-keylist" },
+          settingsRow("🔑", "Codice per rientrare da un altro telefono", el("span", { class: "sx-key notranslate", translate: "no" }, mySeatKey))
+        )
+      : null,
     el("div", { class: "sx-sec" }, "Sviluppo"),
     el(
       "div",
