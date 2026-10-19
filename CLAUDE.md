@@ -149,8 +149,10 @@
   finché arriva (`get()` non basta), poi si riprova; l'ascolto aggiunto si stacca alla fine. Mai due applicazioni
   della stessa mossa (test `e2e-riprova`). Prima compariva "La mossa non è stata salvata… Riprova" (es. appena
   partita la partita, quando l'ascolto viene staccato e riattaccato).
-- RIPRISTINO PRONTO (branch `claude/ripristino-v621`, NON pubblicato): gioco della v6.16 con numero v6.23 (mai tornare a
-  "v6.16": i telefoni già aggiornati vedrebbero gli altri come vecchi). Il numero deve superare ogni versione pubblicata.
+- RIPRISTINO PRONTO: PR #31 (branch `claude/ripristino-v623`, base privacy #30 → v6.22): gioco della v6.16 con numero v6.23
+  (mai tornare a "v6.16": i telefoni già aggiornati vedrebbero gli altri come vecchi; il numero deve superare ogni versione
+  pubblicata). Test del gioco della v6.16; le e2e delle funzioni v6.17-v6.22 si saltano SOLO se il gioco è identico alla
+  v6.16 (`richiede()` in e2e-banco.js, `ripristino-gioco.test.js`). Il vecchio `claude/ripristino-v621` è superato.
 - Fase 0 FATTA (rapporto in chat): regole pubblicate = `database.rules.json`; classifica 2 voci (Yaymaris id della V5
   NON in rubrica, Giuliano), totali vittorie 3 · partite 5 · vinte 3; AUTO-1 bloccata. Proposte in
   `firebase-tests/PROPOSTE-DATI.md`; passi manuali Fasi 1-2 in `firebase-tests/FASI-1-2.md` (NON eseguiti).
@@ -176,6 +178,7 @@
 - Fase 1 FATTA dall'utente (19/10: provider Anonimo attivo, v6.16 ok su 2 telefoni). Fase 2 PREPARATA (non eseguita):
   procedura in `firebase-tests/FASI-1-2.md` (export/regole nuovi con data → `fase0/verifica.js` + `fase0-prova` +
   `fase2-prova` → incollare transizione → simulatore, 2 telefoni, `fase2/controlla-dopo.js`; ritorno = backup).
+- Privacy aggiornata (login anonimo, uid, profilo, codice di rientro): PR #30 (base #29), da unire nella #29 prima del rilascio.
 - NON configurato (lo fa l'utente): environment, segreti, variabili, auto-merge.
 
 ## Diritti (v6.09)
