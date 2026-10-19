@@ -135,6 +135,11 @@ jobs:
         working-directory: firebase-tests
         run: |
           if npm run | grep -q fase2-prova; then npm run fase2-prova; else echo "prova della Fase 2 non ancora presente in questo branch"; fi
+      - name: Prova generale delle regole 5A con la v6.23 (dati finti con la forma di quelli veri)
+        if: steps.presenza.outputs.presente == 'si'
+        working-directory: firebase-tests
+        run: |
+          if npm run | grep -q r2-prova; then npm run r2-prova; else echo "prova R2 non ancora presente in questo branch"; fi
       - name: Log dell'emulatore se qualcosa va storto
         if: failure()
         run: tail -n 200 firebase-tests/*-debug.log || true

@@ -73,6 +73,10 @@ Per questo l'arbitro si accende **dopo** le regole 5A.
 
 ## Procedura di rilascio (in ordine; ogni passo ha la prova e il ritorno indietro)
 
+Esito di R1 e piano aggiornato: `fase5/R1.md` (criteri per ciò che non si può verificare, partite interrotte,
+problema delle stanze AUTO "di prima" in attesa con le regole 5B).
+
+
 | # | Passo | Chi | Prova prima di andare avanti | Ritorno indietro |
 |---|---|---|---|---|
 | R0 | Unire la PR della v6.23 (arbitro spento) | utente/Claude su ok | "Verifica del sito" = v6.23; 2 telefoni giocano come prima | ripristino v6.24 = gioco v6.22 (branch `claude/ripristino-v624`, vedi sotto) |
