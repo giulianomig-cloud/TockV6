@@ -173,12 +173,15 @@
 - FATTO: #27 e #28 unite in main (e9194da, sito v6.16); ruleset "Protezione main" attivo (PR obbligatoria,
   "Tutti i controlli" da GitHub Actions, branch aggiornato, niente force push/cancellazione). "Verifica del sito" aspetta
   la pubblicazione Pages del commit (API deployments) prima di controllare la versione.
-- Candidato al rilascio v6.22: branch `claude/rilascio-v622` = ci-automatica + main (PR in bozza, NON unire prima delle
-  Fasi 1-2). Piano di collaudo: `firebase-tests/COLLAUDO-V622.md`. Le PR #19-#25 hanno girato solo il vecchio controllo.
-- Fase 1 FATTA dall'utente (19/10: provider Anonimo attivo, v6.16 ok su 2 telefoni). Fase 2 PREPARATA (non eseguita):
-  procedura in `firebase-tests/FASI-1-2.md` (export/regole nuovi con data → `fase0/verifica.js` + `fase0-prova` +
-  `fase2-prova` → incollare transizione → simulatore, 2 telefoni, `fase2/controlla-dopo.js`; ritorno = backup).
-- Privacy aggiornata (login anonimo, uid, profilo, codice di rientro): PR #30 (base #29), da unire nella #29 prima del rilascio.
+- Rilascio v6.22: PR #29 (`claude/rilascio-v622` = ci-automatica + main + privacy #30), unita in main il 19/10 dopo le
+  Fasi 1-2. Piano di collaudo: `firebase-tests/COLLAUDO-V622.md`. Ripristino del gioco: PR #31 (v6.23 = gioco v6.16).
+- Fase 1 FATTA dall'utente (19/10: provider Anonimo attivo, v6.16 ok su 2 telefoni).
+- Fase 2 FATTA (19/10, pubblicata dall'utente in console): regole di transizione. Impronta prima `0b0dd43b…707edd5b`
+  (= database.rules.json), dopo = `firebase-tests/regole/transizione.json` (`c0a7d4e2…48622e86`). `controlla-dopo.js`:
+  classifica 2 voci invariata (vittorie 5 · partite 10 · vinte 5), nulla sparito; prove simulatore 4/4 sull'emulatore
+  con le regole copiate dalla console; fase2-prova 7/7 coi dati di dopo. Ritorno = incollare database.rules.json.
+  `database.rules.json` resta quello di PRIMA (backup); le regole in produzione ora sono la transizione.
+- Fase 5 (regole definitive) NON fatta: va decisa a parte, solo quando tutti i telefoni sono sulla v6.22.
 - NON configurato (lo fa l'utente): environment, segreti, variabili, auto-merge.
 
 ## Diritti (v6.09)

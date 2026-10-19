@@ -14,7 +14,11 @@ Provider "Anonimo" attivato in Authentication. Verifica dell'utente: la v6.16 su
   - in Google Cloud, le eventuali restrizioni della chiave API.
   Se il login non riesce, la v6.22 gioca lo stesso, ma senza profilo, classifica nuova e codice di rientro.
 
-## Fase 2 — Regole di transizione (PREPARATA, NON eseguita)
+## Fase 2 — Regole di transizione · FATTA (19/10/2026, pubblicata dall'utente)
+
+Esito: regole copiate dalla console = `regole/transizione.json`; `controlla-dopo.js` "✓ Fase 2 confermata" (nessuna voce
+sparita o scesa); prove del simulatore 4/4 rifatte sull'emulatore con le regole copiate; `fase2-prova` 7/7 coi dati di dopo.
+Impronta delle regole prima: `0b0dd43b…707edd5b` (= `database.rules.json`, è anche il backup per il ritorno).
 
 Cosa cambia: alle regole di oggi si AGGIUNGONO solo `profiles`, `credited`, `seatKeys`, `seatClaims`. Nessuna regola
 di oggi viene modificata (controllato da `fase12-regole.test.js`). Pubblicare regole non modifica i dati.

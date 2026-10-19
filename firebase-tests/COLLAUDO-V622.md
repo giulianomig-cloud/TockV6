@@ -5,8 +5,8 @@ main attuale (controlli #27 e verifica del sito #28). Si pubblica con UNA sola P
 volta (ogni unione in main ripubblica il sito: passerebbero sul sito v6.17, v6.18… una dopo l'altra).
 
 ## Ordine obbligatorio
-1. **Fase 1 — accesso anonimo** (console, la fa l'utente: `FASI-1-2.md`). Da sola non cambia nulla per la v6.16.
-2. **Fase 2 — regole di transizione** (console oppure workflow "Rilascio" in PROVA e poi vero). Compatibili con la
+1. **Fase 1 — accesso anonimo** · FATTA 19/10 (console, la fa l'utente: `FASI-1-2.md`). Da sola non cambia nulla per la v6.16.
+2. **Fase 2 — regole di transizione** · FATTA 19/10 (console oppure workflow "Rilascio" in PROVA e poi vero). Compatibili con la
    v6.16 (provato). Senza di esse la v6.22 gioca ma NON registra la classifica, non salva profili né codici di rientro.
 3. **Fase 3 — gioco v6.22**: unione della privacy (#30) nella #29, poi della PR del candidato → "Verifica del sito" deve dire "trovata v6.22".
 4. **Fase 4 — attesa** che tutti i telefoni siano sulla v6.22 (presenze in `presence/` senza `v6.16`).
