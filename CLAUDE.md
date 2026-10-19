@@ -173,6 +173,9 @@
   la pubblicazione Pages del commit (API deployments) prima di controllare la versione.
 - Candidato al rilascio v6.22: branch `claude/rilascio-v622` = ci-automatica + main (PR in bozza, NON unire prima delle
   Fasi 1-2). Piano di collaudo: `firebase-tests/COLLAUDO-V622.md`. Le PR #19-#25 hanno girato solo il vecchio controllo.
+- Fase 1 FATTA dall'utente (19/10: provider Anonimo attivo, v6.16 ok su 2 telefoni). Fase 2 PREPARATA (non eseguita):
+  procedura in `firebase-tests/FASI-1-2.md` (export/regole nuovi con data → `fase0/verifica.js` + `fase0-prova` +
+  `fase2-prova` → incollare transizione → simulatore, 2 telefoni, `fase2/controlla-dopo.js`; ritorno = backup).
 - NON configurato (lo fa l'utente): environment, segreti, variabili, auto-merge.
 
 ## Diritti (v6.09)

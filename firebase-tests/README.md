@@ -58,6 +58,8 @@ npm run controlla-sito
   produzione, senza ambiguità), `backup.js` (backup cifrato e verificato, `decifra` per il ripristino a mano),
   `migrazione-legacy.js` (collegamenti della classifica, mai per nome, idempotente), `esegui.js` (rilascio con arresto e
   ripristino automatico), `confronta-pubblicate.js` (sola lettura). Provati in `test/rilascio.test.js` con dati finti.
+- `fase2/prova-fase2.test.js` (`npm run fase2-prova`) — prova generale della Fase 2 sull'emulatore (anche con una copia
+  dei dati veri: `BACKUP_REGOLE=… BACKUP_DATI=…`); `fase2/controlla-dopo.js` — controllo dopo la pubblicazione.
 - `migrazione/analizza-classifica.js` — legge un export JSON della console e stampa un resoconto
   (solo lettura, nessun collegamento a Firebase).
 
