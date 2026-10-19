@@ -181,7 +181,9 @@ Diventa ROSSO (e GitHub ti manda un'email) se:
 - la pubblicazione non finisce entro 20 minuti;
 - dopo la pubblicazione il sito mostra ancora la versione precedente entro 20 minuti.
 Due unioni ravvicinate: il giro vecchio viene ANNULLATO (non dichiarato riuscito), resta quello nuovo.
-- Ripristino del gioco: si pubblica `claude/ripristino-v621` (gioco della v6.16 con un numero più alto).
+- Ripristino del gioco: PR #31 (`claude/ripristino-v623`), gioco della v6.16 con numero v6.23, costruita sopra la v6.22
+  così passa "Tutti i controlli" (le prove delle funzioni v6.17-v6.22 risultano saltate col motivo). Passi in
+  `firebase-tests/COLLAUDO-V622.md`. Il vecchio `claude/ripristino-v621` non va più usato.
 - Mai un "Revert" verso un numero più basso.
 
 **Compatibilità con GitHub Pages ("Deploy from branch").** OGNI unione in `main` ripubblica il sito in 1-2
