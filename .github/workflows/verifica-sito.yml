@@ -1,6 +1,9 @@
-# Verifica dopo il rilascio del GIOCO: quando main cambia, aspetta che GitHub Pages pubblichi e controlla
-# che il sito mostri la stessa versione di main. Se non succede entro 15 minuti il controllo diventa rosso
-# (GitHub manda una email): si valuta il ripristino (branch claude/ripristino-v621, vedi AUTOMAZIONE.md).
+# Verifica dopo ogni pubblicazione su GitHub Pages ("Deploy from branch").
+# Quando main cambia: ASPETTA che la pubblicazione Pages di QUEL commit finisca (deployment "github-pages"),
+# poi controlla che il sito mostri la versione di quel commit. Rosso se la pubblicazione fallisce, viene
+# superata da un commit più recente, non finisce entro 20 minuti, o se il sito resta alla versione precedente.
+# GitHub manda una email sul rosso: si valuta il ripristino (branch claude/ripristino-v621, AUTOMAZIONE.md).
+# Solo lettura: legge i deployment del repository (permesso "deployments: read") e il sito pubblico.
 name: Verifica del sito
 
 on:
@@ -10,14 +13,23 @@ on:
 
 permissions:
   contents: read
+  deployments: read
+
+# Due unioni ravvicinate: resta solo la verifica del commit più recente (la vecchia viene annullata, non
+# dichiarata riuscita).
+concurrency:
+  group: verifica-sito
+  cancel-in-progress: true
 
 jobs:
   sito:
     name: Il sito mostra la versione di main
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       SITO: https://giulianomig-cloud.github.io/TockV6/
+      LIMITE_MS: "1200000"
+      INTERVALLO_MS: "15000"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,4 +38,7 @@ jobs:
         with:
           node-version: 22
       - run: node .github/scripts/controlla-versione.js
-      - run: node .github/scripts/verifica-sito.js
+      - name: Aspetta la pubblicazione Pages di questo commit e controlla il sito
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/verifica-sito.js

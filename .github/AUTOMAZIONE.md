@@ -167,9 +167,20 @@ Prima di usarla serve ancora:
 ## 6. Fase E — Rilascio automatico
 
 ### Gioco (index.html, sw.js…)
-PR → "Tutti i controlli" verde → unione in `main` → GitHub Pages pubblica → workflow **"Verifica del sito"**:
-per 15 minuti controlla che il sito mostri la stessa versione di main, con `sw.js` e `manifest.json` validi.
-Se non ci riesce diventa rosso e GitHub ti manda un'email.
+PR → "Tutti i controlli" verde → unione in `main` → GitHub Pages pubblica → workflow **"Verifica del sito"**
+(`.github/scripts/verifica-sito.js`, solo lettura):
+1. aspetta che la pubblicazione Pages (deployment `github-pages`) di QUEL commit finisca: waiting → queued →
+   in_progress → **success**. Prima di questa correzione partiva subito dopo l'unione e controllava il sito vecchio;
+2. solo dopo controlla il sito: `index.html`, `sw.js` e `manifest.json` devono avere la versione del commit
+   (riprova ogni 15 s, perché la cache del sito può impiegare un po');
+3. ogni tentativo scrive nel log "versione attesa · trovata · esito"; il riepilogo finale va nella pagina del giro.
+
+Diventa ROSSO (e GitHub ti manda un'email) se:
+- la pubblicazione fallisce (`failure`/`error`) o viene sostituita da una più recente (`inactive`);
+- main va avanti prima che questo commit venga pubblicato (lo verificherà il giro del commit nuovo);
+- la pubblicazione non finisce entro 20 minuti;
+- dopo la pubblicazione il sito mostra ancora la versione precedente entro 20 minuti.
+Due unioni ravvicinate: il giro vecchio viene ANNULLATO (non dichiarato riuscito), resta quello nuovo.
 - Ripristino del gioco: si pubblica `claude/ripristino-v621` (gioco della v6.16 con un numero più alto).
 - Mai un "Revert" verso un numero più basso.
 
