@@ -54,6 +54,12 @@ jobs:
           node-version: 22
       - run: node --test .github/scripts/*.test.js
       - run: node .github/scripts/controlla-workflow.js
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - name: Sintassi dei workflow (actionlint, versione fissa verificata da sum.golang.org)
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -color
 
   sito:
     name: Il sito non pubblica i test
@@ -66,11 +72,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Jekyll 3.10 (come GitHub Pages), installato solo in firebase-tests/.gems
-        working-directory: firebase-tests
-        run: gem install --no-document --install-dir .gems jekyll:3.10.0 kramdown-parser-gfm webrick
-      - working-directory: firebase-tests
-        run: node controlla-sito.js
+      - name: Jekyll 3.10 (come GitHub Pages), installato in una cartella temporanea
+        run: gem install --no-document --install-dir "$RUNNER_TEMP/gems" jekyll:3.10.0 kramdown-parser-gfm webrick
+      - run: GEMS="$RUNNER_TEMP/gems" node .github/scripts/controlla-sito.js
 
   firebase:
     name: Sicurezza Firebase (emulatore)
@@ -82,33 +86,53 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0 # serve il commit della v6.16 per le prove fra versioni
-      - uses: actions/setup-node@v4
+      # I test Firebase esistono dalla PR "2/6"; prima (es. main con la v6.16) questo controllo non ha niente
+      # da provare. Se però la cartella c'era ed è stata TOLTA, è un errore: non si aggira così il controllo.
+      - name: Ci sono i test Firebase?
+        id: presenza
+        run: |
+          if [ -f firebase-tests/package.json ]; then echo "presente=si" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -n "$(git log --format=%H -1 -- firebase-tests/package.json)" ]; then
+            echo "ERRORE: firebase-tests/ è stata tolta"; exit 1
+          fi
+          echo "presente=no" >> "$GITHUB_OUTPUT"
+          echo "Nessun test Firebase in questo branch (ancora da aggiungere): niente da provare."
+      - if: steps.presenza.outputs.presente == 'si'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: firebase-tests/package-lock.json
-      - uses: actions/setup-java@v4
+      - if: steps.presenza.outputs.presente == 'si'
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
-      - uses: actions/cache@v4
+      - if: steps.presenza.outputs.presente == 'si'
+        uses: actions/cache@v4
         with:
           path: ~/.cache/firebase/emulators
           key: emulatori-${{ hashFiles('firebase-tests/package-lock.json') }}
-      - working-directory: firebase-tests
+      - if: steps.presenza.outputs.presente == 'si'
+        working-directory: firebase-tests
         run: npm ci
-      - working-directory: firebase-tests
-        run: npx playwright install --with-deps chromium
+      - name: Chromium per le prove del gioco (Playwright 1.56.1, anche per i branch che non lo elencano)
+        if: steps.presenza.outputs.presente == 'si'
+        run: |
+          npm install -g playwright@1.56.1
+          playwright install --with-deps chromium
       - name: Regole, attacchi, posti, classifica, migrazione, rilascio, gioco vero in Chromium
+        if: steps.presenza.outputs.presente == 'si'
         working-directory: firebase-tests
         run: npm test
       - name: Ripristino delle regole (andata e ritorno)
+        if: steps.presenza.outputs.presente == 'si'
         working-directory: firebase-tests
-        run: npm run fase0-prova
+        run: |
+          if npm run | grep -q fase0-prova; then npm run fase0-prova; else echo "prova di ripristino non ancora presente in questo branch"; fi
       - name: Log dell'emulatore se qualcosa va storto
         if: failure()
-        working-directory: firebase-tests
-        run: tail -n 200 *-debug.log || true
+        run: tail -n 200 firebase-tests/*-debug.log || true
 
   esito:
     name: Tutti i controlli

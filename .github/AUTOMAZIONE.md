@@ -4,27 +4,29 @@ Stato: **preparata**. I controlli automatici funzionano. Il rilascio in produzio
 sull'emulatore, ma è **spento**: non esistono né la variabile `PRODUZIONE_ATTIVA` né i segreti.
 Nessuna operazione è stata fatta su Firebase vero, su `main` o sulle PR esistenti.
 
-## 0. Situazione di partenza (18/10/2026)
+## 0. Situazione di partenza (verificata il 19/10/2026)
 
-- `main` = v6.16 (commit c89c66d), pubblicato su GitHub Pages da main. Repository **pubblico**.
+- `main` = v6.16 (commit c89c66d), pubblicato su GitHub Pages ("Deploy from branch") da main. Repository **pubblico**.
 - 7 PR in bozza **a catena**, nessuna unita: #19 → #20 → #21 → #22 → #23 → #24 → #25 (fino a v6.21).
-  Poi `claude/riprova` (v6.22, senza PR) e questa PR (#26), che parte da `claude/riprova`.
-- Prima di #26 c'era un solo workflow (`controlli.yml`): eseguiva i 39-40 test del gioco a ogni push, senza
-  permessi espliciti. I test Firebase giravano solo in locale.
+  Poi `claude/riprova` (v6.22, senza PR) e la PR #26 (automazione completa), che parte da `claude/riprova`.
+- PR **#27** (`claude/ci-main` → `main`): SOLO i controlli e i documenti, nessun file del gioco. Serve a
+  portare "Tutti i controlli" su main SENZA pubblicare la v6.22 (vedi punto 2.0).
+- Prima c'era un solo workflow (`controlli.yml`): eseguiva i test del gioco a ogni push, senza permessi
+  espliciti. I test Firebase giravano solo in locale.
 - Protezione di `main`: **non verificabile da qui** (gli strumenti di Claude non leggono le impostazioni del
   repository). Va controllata a mano (punto 2).
 
-## 1. Fase A — Controlli automatici (ATTIVA con questa PR)
+## 1. Fase A — Controlli automatici
 
 Workflow `Controlli` (`.github/workflows/controlli.yml`). Parte a ogni PR, a ogni aggiornamento di una PR, a
-ogni push su `main` e quando lo richiama il rilascio.
+ogni push su `main` e quando lo richiama il rilascio. È lo STESSO file in #26 e #27.
 
 | Controllo | Cosa fa | Tempo |
 |---|---|---|
 | Regole del gioco | `node --test tests/*.test.js`. Controlla anche APP_VERSION = CACHE_VERSION. Verso main, se cambia il gioco, la versione deve salire | ~10 s |
-| Workflow sicuri | `controlla-workflow.js` + i suoi 18 test (vedi sotto) | ~10 s |
-| Il sito non pubblica i test | Jekyll 3.10 come GitHub Pages: `firebase-tests/` non deve finire sul sito | ~30 s |
-| Sicurezza Firebase (emulatore) | `npm test` in `firebase-tests` (regole, attacchi, posti, classifica, migrazione, rilascio, gioco vero in Chromium con più "telefoni", v6.16 insieme alla nuova) + `fase0-prova` (andata e ritorno delle regole) | ~5 min |
+| Workflow sicuri | `controlla-workflow.js` + i suoi 18 test, e `actionlint` (sintassi dei workflow, versione fissa) | ~40 s |
+| Il sito non pubblica i test | Jekyll 3.10 come GitHub Pages: `firebase-tests/`, `.github/`, `.claude/` non devono finire sul sito | ~30 s |
+| Sicurezza Firebase (emulatore) | `npm test` in `firebase-tests` (regole, attacchi, posti, classifica, migrazione, rilascio, gioco vero in Chromium con più "telefoni", v6.16 insieme alla nuova) + `fase0-prova` (andata e ritorno delle regole). Sui branch che non hanno ancora `firebase-tests/` (main di oggi, #19) dice "niente da provare"; se la cartella c'era ed è stata TOLTA, diventa rosso | ~5 min |
 | **Tutti i controlli** | Verde solo se TUTTI i precedenti sono verdi. **È questo che va reso obbligatorio** | pochi s |
 
 Sicurezza dei workflow, controllata a ogni PR da `.github/scripts/controlla-workflow.js`:
@@ -39,18 +41,45 @@ Sicurezza dei workflow, controllata a ogni PR da `.github/scripts/controlla-work
 - i workflow di produzione partono SOLO a mano (`workflow_dispatch`). Ogni job con segreti ha un `environment`
   e il blocco `vars.PRODUZIONE_ATTIVA == 'si'`.
 
+Attenzione: questo controllo protegge dagli ERRORI, non da chi vuole aggirarlo. Una PR potrebbe modificare lo
+script stesso. La vera barriera per i segreti è che stiano SOLO nell'environment `production` limitato a
+`main` (punto 6): una PR non gira su `main`, quindi non li riceve.
+
 Le PR da un fork girano con il token in sola lettura e senza segreti: è il comportamento standard di GitHub
 per `pull_request`.
 
 ## 2. Configurazioni GitHub da fare A MANO (Claude non può farle)
 
-**A. Rendere obbligatori i controlli (dopo l'unione di questa PR in main).**
-Percorso: Settings → Rules → Rulesets → New branch ruleset (oppure Settings → Branches → Add rule).
-- Bersaglio: `main`. Enforcement: **Active**.
-- ✅ Require a pull request before merging. Approvazioni richieste: 0, se vuoi che l'auto-merge proceda da solo.
-- ✅ Require status checks to pass → aggiungere **"Tutti i controlli"**. Il nome compare nell'elenco solo dopo
-  che il controllo è girato almeno una volta. Consigliato anche ✅ "Require branches to be up to date".
-- ✅ Block force pushes · ✅ Restrict deletions.
+**2.0 Ordine giusto (importante).**
+Un controllo obbligatorio che su main NON esiste blocca TUTTE le unioni: GitHub resta in "Expected — Waiting
+for status to be reported". Quindi:
+1. prima si unisce la **#27** (solo controlli: il sito resta v6.16, identico);
+2. si aspetta che su main giri "Controlli" e che "Verifica del sito" sia verde (Actions);
+3. solo dopo si crea la regola qui sotto.
+
+NON unire la #26 per questo scopo: porterebbe su main anche la v6.17-v6.22 = pubblicazione del gioco nuovo
+(che richiede prima le regole di transizione).
+
+**A. Proteggere main e rendere obbligatorio "Tutti i controlli"** (dopo il passo 2.0).
+Percorso: GitHub → repository TockV6 → **Settings** → menu a sinistra **Rules** → **Rulesets** →
+**New ruleset** → **New branch ruleset**.
+1. Ruleset name: `Protezione main`. Enforcement status: **Active**.
+2. Bypass list: **lasciarla vuota** (così la regola vale anche per te e per Claude).
+3. Target branches → **Add target** → **Include default branch** (= `main`).
+4. Branch rules:
+   - ✅ **Restrict deletions**;
+   - ✅ **Block force pushes**;
+   - ✅ **Require a pull request before merging** → Required approvals: **0**. Con 0 puoi unire tu dal
+     telefono e, in futuro, l'auto-merge può procedere da solo. Lascia spente le altre opzioni;
+   - ✅ **Require status checks to pass** → ✅ "Require branches to be up to date before merging" →
+     **Add checks** → scrivere `Tutti i controlli` → sceglierlo. Se chiede la fonte, scegliere
+     **GitHub Actions** (così un'altra app non può fingere il controllo).
+5. **Create**.
+
+Controllo che funzioni: apri una PR qualsiasi verso main (es. #19). In fondo deve comparire "Tutti i controlli —
+Required"; il pulsante di unione resta grigio finché non diventa verde.
+Per tornare indietro: Settings → Rules → Rulesets → `Protezione main` → Enforcement **Disabled** (o Delete).
+Non tocca né codice né sito.
 
 **B. Permessi di GitHub Actions** (Settings → Actions → General):
 - Fork pull request workflows: "Require approval for all outside collaborators";
@@ -143,6 +172,20 @@ per 15 minuti controlla che il sito mostri la stessa versione di main, con `sw.j
 Se non ci riesce diventa rosso e GitHub ti manda un'email.
 - Ripristino del gioco: si pubblica `claude/ripristino-v621` (gioco della v6.16 con un numero più alto).
 - Mai un "Revert" verso un numero più basso.
+
+**Compatibilità con GitHub Pages ("Deploy from branch").** OGNI unione in `main` ripubblica il sito in 1-2
+minuti, qualunque file cambi. Quindi:
+- **#27** (solo controlli): il sito resta identico (v6.16). `.github/` e `.claude/` iniziano col punto e Jekyll
+  non li pubblica (verificato dal controllo "Il sito non pubblica i test");
+- **catena #19-#26**: unirle UNA ALLA VOLTA in main pubblicherebbe di seguito v6.16 → v6.17 → … → v6.22 (versioni
+  intermedie sul sito per qualche minuto, ognuna con l'avviso "aggiorna" agli altri). Consigliato invece, al
+  momento del rilascio (dopo le Fasi 1-2):
+  1. una sola PR `claude/ci-automatica` → `main` (contiene tutta la catena, v6.22 + automazione);
+  2. "Tutti i controlli" verde su quella PR (è il controllo completo, gioco vero compreso);
+  3. unione → una sola pubblicazione della v6.22 → "Verifica del sito";
+  4. chiusura di #19-#26 come "incluse" (il loro contenuto è già in main).
+- Le PR #20-#25 hanno come base un altro branch, non main: su di loro gira ancora il vecchio "Controlli regole"
+  (solo il gioco). Il controllo completo gira solo verso main e su #26.
 
 ### Regole del database (+ eventuale migrazione)
 Workflow **"Rilascio (produzione)"** (`.github/workflows/rilascio.yml`): solo a mano, solo da `main`, in
