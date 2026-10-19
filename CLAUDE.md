@@ -168,7 +168,12 @@
   (AUTOMAZIONE.md punto 2) → al rilascio UNA sola PR `claude/ci-automatica` → main (mai la catena una PR alla volta:
   pubblicherebbe le versioni intermedie). Su branch senza `firebase-tests/` il controllo Firebase dice "niente da
   provare"; se la cartella viene tolta diventa rosso. Playwright 1.56.1 installato anche globalmente in CI.
-- NON configurato (lo fa l'utente): protezione di main, environment, segreti, variabili, auto-merge.
+- FATTO: #27 e #28 unite in main (e9194da, sito v6.16); ruleset "Protezione main" attivo (PR obbligatoria,
+  "Tutti i controlli" da GitHub Actions, branch aggiornato, niente force push/cancellazione). "Verifica del sito" aspetta
+  la pubblicazione Pages del commit (API deployments) prima di controllare la versione.
+- Candidato al rilascio v6.22: branch `claude/rilascio-v622` = ci-automatica + main (PR in bozza, NON unire prima delle
+  Fasi 1-2). Piano di collaudo: `firebase-tests/COLLAUDO-V622.md`. Le PR #19-#25 hanno girato solo il vecchio controllo.
+- NON configurato (lo fa l'utente): environment, segreti, variabili, auto-merge.
 
 ## Diritti (v6.09)
 - "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`
