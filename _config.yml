@@ -1,4 +1,6 @@
 # GitHub Pages (Jekyll): cartelle che NON vanno pubblicate sul sito.
-# firebase-tests/ contiene solo i test di sicurezza sull'emulatore locale.
+# firebase-tests/ contiene solo i test di sicurezza sull'emulatore locale; functions/ è il codice del server
+# (Cloud Functions), che si pubblica a parte su Firebase e NON sul sito.
 exclude:
   - firebase-tests
+  - functions

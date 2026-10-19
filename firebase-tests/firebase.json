@@ -1,10 +1,44 @@
 {
+  "functions": [
+    {
+      "source": "../functions",
+      "codebase": "arbitro",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules",
+        "test",
+        ".env.demo-tock"
+      ],
+      "predeploy": [
+        "node \"$RESOURCE_DIR/genera-motore.js\" --check",
+        "npm --prefix \"$RESOURCE_DIR\" test"
+      ]
+    }
+  ],
   "emulators": {
-    "database": { "host": "127.0.0.1", "port": 9000 },
-    "auth": { "host": "127.0.0.1", "port": 9099 },
-    "hub": { "host": "127.0.0.1", "port": 4400 },
-    "logging": { "host": "127.0.0.1", "port": 4500 },
-    "ui": { "enabled": false },
+    "database": {
+      "host": "127.0.0.1",
+      "port": 9000
+    },
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "hub": {
+      "host": "127.0.0.1",
+      "port": 4400
+    },
+    "logging": {
+      "host": "127.0.0.1",
+      "port": 4500
+    },
+    "ui": {
+      "enabled": false
+    },
     "singleProjectMode": true
   }
 }

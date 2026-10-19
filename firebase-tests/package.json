@@ -6,7 +6,8 @@
     "test": "firebase emulators:exec --only database,auth --project demo-tock \"node --test --test-force-exit --test-concurrency=1 test/*.test.js\"",
     "controlla-sito": "node controlla-sito.js",
     "fase0-prova": "firebase emulators:exec --only database --project demo-tock \"node --test --test-force-exit fase0/prova-ripristino.test.js\"",
-    "fase2-prova": "firebase emulators:exec --only database --project demo-tock \"node --test --test-force-exit fase2/prova-fase2.test.js\""
+    "fase2-prova": "firebase emulators:exec --only database --project demo-tock \"node --test --test-force-exit fase2/prova-fase2.test.js\"",
+    "test-arbitro": "firebase emulators:exec --only database,auth,functions --project demo-tock \"node --test --test-force-exit --test-concurrency=1 arbitro-e2e/*.test.js\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",

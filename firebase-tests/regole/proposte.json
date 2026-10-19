@@ -123,6 +123,21 @@
           ".validate": "newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val() === root.child('seatKeys').child($room).child($color).child('key').val()"
         }
       }
+    },
+    "config": {
+      ".read": true
+    },
+    "arbitro": {
+      "$room": {
+        "pub": {
+          ".read": true
+        },
+        "mani": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid"
+          }
+        }
+      }
     }
   }
 }
