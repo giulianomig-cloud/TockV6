@@ -163,6 +163,11 @@
 - Rilascio regole/migrazione: `.github/workflows/rilascio.yml` (solo a mano, da main, PROVA di default, spento finché
   `PRODUZIONE_ATTIVA` ≠ "si"); strumenti in `firebase-tests/rilascio/`. Segreti SOLO in environment `production`
   limitato a main (mai repository secrets). Verifica del sito dopo ogni push su main (`verifica-sito.yml`).
+- PR #27 (`claude/ci-main` → main): SOLO controlli e documenti (stessi file della #26, già uniti in ci-automatica),
+  per rendere obbligatorio "Tutti i controlli" PRIMA di pubblicare la v6.22. Ordine: unire #27 → creare il ruleset
+  (AUTOMAZIONE.md punto 2) → al rilascio UNA sola PR `claude/ci-automatica` → main (mai la catena una PR alla volta:
+  pubblicherebbe le versioni intermedie). Su branch senza `firebase-tests/` il controllo Firebase dice "niente da
+  provare"; se la cartella viene tolta diventa rosso. Playwright 1.56.1 installato anche globalmente in CI.
 - NON configurato (lo fa l'utente): protezione di main, environment, segreti, variabili, auto-merge.
 
 ## Diritti (v6.09)
