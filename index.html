@@ -8299,7 +8299,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.24";
+const APP_VERSION = "v6.25";
 
 let myColor = null;
 let myRoomId = null;
@@ -10009,19 +10009,6 @@ function mmIsStuckLobby(st) {
   const last = seen.length ? Math.max(...seen) : 0;
   return serverNow() - last > MM_ABANDONED_MS;
 }
-// v6.24: con l'arbitro acceso, una stanza AUTO "di prima" (senza arbitro) in sala d'attesa, senza posti e senza
-// persone vive in attesa (solo fantasmi o nessuno) si trasforma in una stanza con l'arbitro. Con le regole 5B
-// altrimenti resterebbe bloccata per sempre (le regole permettono proprio e solo questo recupero).
-// Se qualcuno di vivo aspetta (es. telefono con la v6.23 durante il passaggio) la stanza non si tocca.
-function mmDaRecuperare(st, token) {
-  if (!ARBITRO_ATTIVO || !st || st.roomMode !== "draw" || usaArbitro(st) || st.phase !== "lobby") return false;
-  if (st.players && Object.keys(st.players).length > 0) return false;
-  const d = st.draft;
-  if (!d) return true;
-  if (d.pairDraw) return false; // estrazione in corso: se è bloccata ci pensa mmIsStuckLobby
-  const vivi = mmLiveTokens(d).filter((t) => t !== token && !(d.botTokens && d.botTokens[t]));
-  return vivi.length === 0;
-}
 // Una partita già cominciata si può riusare solo se nessuno è collegato e
 // (è finita, oppure è ferma da più di MM_ABANDONED_MS).
 function mmIsAbandoned(st, presenceVal) {
@@ -10098,7 +10085,6 @@ async function mmJoinRoom(roomId, recycle, token) {
       else {
         st = normalizeState(JSON.parse(JSON.stringify(current)));
         if (recycle && (st.phase !== "lobby" || mmIsStuckLobby(st)) && mmFingerprint(st) === recycle) st = preparaStanzaNuova(newGameState({}, "draw"));
-        else if (mmDaRecuperare(st, token)) st = preparaStanzaNuova(newGameState({}, "draw"));
         else if (!(st.draft && st.draft.players && st.draft.players[token]) && !mmIsWaitingRoom(st)) return undefined;
       }
       const d = st.draft;
