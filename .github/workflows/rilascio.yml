@@ -1,0 +1,116 @@
+# Rilascio in PRODUZIONE (regole del database + eventuale migrazione). PREPARATO, NON ATTIVO.
+# Parte SOLO a mano (Actions → Rilascio → Run workflow) e solo se:
+# - la variabile del repository PRODUZIONE_ATTIVA vale "si" (oggi NON esiste: il job viene saltato);
+# - si lancia da main;
+# - l'environment "production" lo permette (segreti lì dentro, eventuale approvazione, solo branch main).
+# Ordine: controlli completi → bersaglio certo → regole pubblicate = attese → backup cifrato e verificato
+# (ricaricato in un emulatore) → regole → migrazione → verifica finale; al primo errore ripristino automatico.
+# Il gioco (index.html) NON passa da qui: lo pubblica GitHub Pages quando una PR entra in main.
+name: Rilascio (produzione)
+
+on:
+  workflow_dispatch:
+    inputs:
+      regole_nuove:
+        description: Regole da pubblicare
+        type: choice
+        options: [nessuna, transizione, definitive]
+        default: nessuna
+      regole_attese:
+        description: Regole che DEVONO risultare pubblicate prima (altrimenti si ferma)
+        type: choice
+        options: [attuali, transizione, definitive]
+        default: attuali
+      migrazione:
+        description: Applicare i collegamenti della classifica (segreto MIGRAZIONE_JSON)
+        type: boolean
+        default: false
+      prova:
+        description: PROVA (non scrive nulla, fa solo backup e verifiche)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rilascio-produzione
+  cancel-in-progress: false
+
+jobs:
+  controlli:
+    uses: ./.github/workflows/controlli.yml
+
+  produzione:
+    needs: controlli
+    if: vars.PRODUZIONE_ATTIVA == 'si' && github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firebase-tests/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - working-directory: firebase-tests
+        run: npm ci
+      - name: Chiave e migrazione in file temporanei (fuori dal repository, leggibili solo qui)
+        env:
+          CHIAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          MIGRAZIONE: ${{ secrets.MIGRAZIONE_JSON }}
+          VUOI_MIGRAZIONE: ${{ inputs.migrazione }}
+        run: |
+          umask 077
+          printf '%s' "$CHIAVE" > "$RUNNER_TEMP/chiave.json"
+          if [ "$VUOI_MIGRAZIONE" = "true" ]; then printf '%s' "$MIGRAZIONE" > "$RUNNER_TEMP/migrazione.json"; fi
+      - name: Rilascio con backup, verifica e ripristino automatico
+        working-directory: firebase-tests
+        env:
+          TOCK_BERSAGLIO: produzione
+          TOCK_PROGETTO: ${{ vars.TOCK_PROGETTO }}
+          TOCK_DB_URL: ${{ vars.TOCK_DB_URL }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/chiave.json
+          TOCK_BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          TOCK_BACKUP_DIR: ${{ runner.temp }}/backup
+          TOCK_RAPPORTO: ${{ runner.temp }}/rapporto.json
+          TOCK_EMULATORE_VERIFICA: verifica-backup
+          SCELTA_NUOVE: ${{ inputs.regole_nuove }}
+          SCELTA_ATTESE: ${{ inputs.regole_attese }}
+          VUOI_MIGRAZIONE: ${{ inputs.migrazione }}
+          PROVA: ${{ inputs.prova }}
+        run: |
+          file() { case "$1" in attuali) echo ../database.rules.json;; transizione) echo regole/transizione.json;; definitive) echo regole/proposte.json;; *) echo "";; esac; }
+          TOCK_REGOLE_NUOVE="$(file "$SCELTA_NUOVE")"
+          TOCK_REGOLE_ATTESE="$(file "$SCELTA_ATTESE")"
+          export TOCK_REGOLE_NUOVE TOCK_REGOLE_ATTESE
+          if [ "$VUOI_MIGRAZIONE" = "true" ]; then export TOCK_MIGRAZIONE="$RUNNER_TEMP/migrazione.json"; fi
+          if [ "$PROVA" = "true" ]; then export TOCK_PROVA=si; else export TOCK_PROVA=no; fi
+          npx firebase emulators:exec --only database --project demo-tock "node rilascio/esegui.js"
+      - name: Riepilogo (solo passi ed esiti, nessun dato)
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/rapporto.json" ]; then
+            node -e 'const r=require(process.argv[1]); console.log("## Rilascio: "+r.esito+"\n"+r.passi.map(p=>"- "+p.esito+" · "+p.nome+(p.dettagli?": "+p.dettagli:"")).join("\n"))' "$RUNNER_TEMP/rapporto.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Backup CIFRATO conservato 30 giorni
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-produzione-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/backup/manifesto.json
+            ${{ runner.temp }}/backup/regole.json
+            ${{ runner.temp }}/backup/dati.json.enc
+          retention-days: 30
+          if-no-files-found: ignore
+      - name: Cancella chiave e file temporanei
+        if: always()
+        run: rm -f "$RUNNER_TEMP/chiave.json" "$RUNNER_TEMP/migrazione.json"

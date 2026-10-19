@@ -1,0 +1,44 @@
+# FASE C — confronto (SOLA LETTURA) fra le regole pubblicate in produzione e i file del repository.
+# Non scrive nulla. Parte solo a mano e solo con PRODUZIONE_ATTIVA = "si" e l'environment "produzione-lettura".
+name: Regole pubblicate (sola lettura)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  confronto:
+    if: vars.PRODUZIONE_ATTIVA == 'si'
+    environment: produzione-lettura
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firebase-tests/package-lock.json
+      - working-directory: firebase-tests
+        run: npm ci
+      - name: Chiave in un file temporaneo
+        env:
+          CHIAVE: ${{ secrets.FIREBASE_LETTURA }}
+        run: |
+          umask 077
+          printf '%s' "$CHIAVE" > "$RUNNER_TEMP/chiave.json"
+      - name: Confronto
+        working-directory: firebase-tests
+        env:
+          TOCK_BERSAGLIO: produzione
+          TOCK_PROGETTO: ${{ vars.TOCK_PROGETTO }}
+          TOCK_DB_URL: ${{ vars.TOCK_DB_URL }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/chiave.json
+        run: node rilascio/confronta-pubblicate.js
+      - name: Cancella la chiave
+        if: always()
+        run: rm -f "$RUNNER_TEMP/chiave.json"
