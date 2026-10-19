@@ -4,12 +4,13 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("../test/e2e-banco");
 
-const { telefono, errori } = preparaBanco("../regole/arbitro.json");
+const { giocaDaSolo, fermaGioco, conTelefono, posizioneVincente, senzaArbitro } = require("./aiuti");
 
-const { giocaDaSolo, fermaGioco, conTelefono, posizioneVincente } = require("./aiuti");
+const SALTA = senzaArbitro();
+const { telefono, errori } = preparaBanco("../regole/arbitro.json");
 const { erroriConsole, apriConArbitro, stanzaConDue } = conTelefono(telefono);
 
-test("due telefoni con l'arbitro: carte segrete, mosse controllate dal server, imbrogli rifiutati", LIMITE, async () => {
+test("due telefoni con l'arbitro: carte segrete, mosse controllate dal server, imbrogli rifiutati", { ...LIMITE, skip: SALTA }, async () => {
   await scrivi("config/arbitro", true);
   const { a, b } = await stanzaConDue("ARB1");
   const stanza = await leggi("games/ARB1");
@@ -100,7 +101,7 @@ test("due telefoni con l'arbitro: carte segrete, mosse controllate dal server, i
 
 // Fine partita: si prepara (come amministratore dell'emulatore) una partita a un passo dalla vittoria della
 // squadra di Anna; la mossa vincente la manda Anna dal telefono e la classifica la scrive SOLO il server.
-test("fine partita: classifica scritta dal server una volta sola, poi rivincita", LIMITE, async () => {
+test("fine partita: classifica scritta dal server una volta sola, poi rivincita", { ...LIMITE, skip: SALTA }, async () => {
   await scrivi("config/arbitro", true);
   await scrivi("leaderboard/-vecchiaVoce", { nome: "Vecchia", partite: 5, vinte: 3, vittorie: 3 });
   const { a, b } = await stanzaConDue("ARB2");
@@ -139,7 +140,7 @@ test("fine partita: classifica scritta dal server una volta sola, poi rivincita"
   assert.deepEqual(erroriConsole.splice(0), []);
 });
 
-test("'Sono io' da un altro telefono (codice di rientro): le carte passano al nuovo telefono, il vecchio non le vede più", LIMITE, async () => {
+test("'Sono io' da un altro telefono (codice di rientro): le carte passano al nuovo telefono, il vecchio non le vede più", { ...LIMITE, skip: SALTA }, async () => {
   await scrivi("config/arbitro", true);
   const { a } = await stanzaConDue("ARB3");
   await a.page.evaluate(() => startGame());
@@ -165,7 +166,7 @@ test("'Sono io' da un altro telefono (codice di rientro): le carte passano al nu
   assert.deepEqual(erroriConsole.splice(0), []);
 });
 
-test("Gioca subito con l'arbitro: coi computer la partita la fa partire il server", LIMITE, async () => {
+test("Gioca subito con l'arbitro: coi computer la partita la fa partire il server", { ...LIMITE, skip: SALTA }, async () => {
   await scrivi("config/arbitro", true);
   const t = await apriConArbitro("Ugo");
   await t.page.evaluate(() => { localStorage.setItem("tock-player", JSON.stringify({ id: null, nome: "Ugo" })); startMatchmaking(); });
@@ -191,7 +192,7 @@ test("Gioca subito con l'arbitro: coi computer la partita la fa partire il serve
   assert.deepEqual(erroriConsole.splice(0), []);
 });
 
-test("arbitro spento (config/arbitro assente): le stanze nuove sono quelle di sempre", LIMITE, async () => {
+test("arbitro spento (config/arbitro assente): le stanze nuove sono quelle di sempre", { ...LIMITE, skip: SALTA }, async () => {
   // Con le regole dell'arbitro una stanza "di sempre" non si può creare: è il motivo per cui arbitro.json si
   // pubblica SOLO dopo aver acceso config/arbitro. Qui si controlla il comportamento del telefono.
   const t = await telefono("Senza");

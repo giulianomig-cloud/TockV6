@@ -149,7 +149,7 @@
   finché arriva (`get()` non basta), poi si riprova; l'ascolto aggiunto si stacca alla fine. Mai due applicazioni
   della stessa mossa (test `e2e-riprova`). Prima compariva "La mossa non è stata salvata… Riprova" (es. appena
   partita la partita, quando l'ascolto viene staccato e riattaccato).
-- RIPRISTINO PRONTO: PR #31 (branch `claude/ripristino-v623`, base privacy #30 → v6.22): gioco della v6.16 con numero v6.23
+- (SUPERATO dalla v6.23, vedi Fase 5) RIPRISTINO: PR #31 (branch `claude/ripristino-v623`, base privacy #30 → v6.22): gioco della v6.16 con numero v6.23
   (mai tornare a "v6.16": i telefoni già aggiornati vedrebbero gli altri come vecchi; il numero deve superare ogni versione
   pubblicata). Test del gioco della v6.16; le e2e delle funzioni v6.17-v6.22 si saltano SOLO se il gioco è identico alla
   v6.16 (`richiede()` in e2e-banco.js, `ripristino-gioco.test.js`). Il vecchio `claude/ripristino-v621` è superato.
@@ -198,7 +198,8 @@
 - Regole: `regole/genera-arbitro.js` → `proposte.json` (5A) e `arbitro.json` (5B). Ordine di rilascio R0-R7 in
   FASE5.md (5A → Blaze → funzione → config/arbitro → attesa v6.23 → 5B). `fase5/controlla-pronti.js export.json`.
 - Prove: `functions` (npm test), `firebase-tests` (npm test, npm run test-arbitro), job CI "Arbitro sul server".
-- Ripristino: con la v6.23 pubblicata il ripristino del gioco va rifatto come v6.24 (la PR #31 usa v6.23).
+- Ripristino dopo la v6.23: branch `claude/ripristino-v624` (gioco v6.22 col numero v6.24; le prove dell'arbitro si
+  saltano SOLO se index.html è identico alla v6.22, `senzaArbitro()` in arbitro-e2e/aiuti.js). La PR #31 (v6.23 = v6.16) è SUPERATA.
 - Decisioni dell'utente ancora aperte: Blaze + avviso di spesa, chi pubblica la funzione, partite coi computer in
   classifica, App Check.
 - Deciso dall'utente (19/10): prima di andare sugli store la classifica si AZZERA TUTTA (export di copia prima, poi

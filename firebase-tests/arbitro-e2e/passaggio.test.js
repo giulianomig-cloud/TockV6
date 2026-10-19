@@ -4,12 +4,13 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { preparaBanco, leggi, scrivi, aspetta, finché, LIMITE } = require("../test/e2e-banco");
 const { sedutoConAmici } = require("../test/e2e-aiuti-partita");
-const { conTelefono, posizioneVincente } = require("./aiuti");
+const { conTelefono, posizioneVincente, senzaArbitro } = require("./aiuti");
 
+const SALTA = senzaArbitro();
 const { telefono, errori } = preparaBanco("../regole/proposte.json");
 const { erroriConsole, apriConArbitro } = conTelefono(telefono);
 
-test("arbitro acceso a metà: la stanza creata prima resta 'di prima' e si gioca come sempre", LIMITE, async () => {
+test("arbitro acceso a metà: la stanza creata prima resta 'di prima' e si gioca come sempre", { ...LIMITE, skip: SALTA }, async () => {
   const a = await telefono("Primo");
   await aspetta(1000);
   assert.equal(await a.page.evaluate(() => ARBITRO_ATTIVO), false);
@@ -33,7 +34,7 @@ test("arbitro acceso a metà: la stanza creata prima resta 'di prima' e si gioca
   assert.deepEqual(errori, []);
 });
 
-test("con le regole 5A e l'arbitro acceso: Gioca subito passa dal server e la classifica la scrive il server", LIMITE, async () => {
+test("con le regole 5A e l'arbitro acceso: Gioca subito passa dal server e la classifica la scrive il server", { ...LIMITE, skip: SALTA }, async () => {
   await scrivi("config/arbitro", true);
   const t = await apriConArbitro("Ugo");
   await t.page.evaluate(() => { localStorage.setItem("tock-player", JSON.stringify({ id: null, nome: "Ugo" })); startMatchmaking(); });

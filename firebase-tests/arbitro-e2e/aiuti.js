@@ -111,4 +111,20 @@ function posizioneVincente(s, colore = "red") {
   return scelta;
 }
 
-module.exports = { giocaDaSolo, fermaGioco, conTelefono, posizioneVincente };
+// Ripristino d'emergenza (gioco della v6.22 col numero v6.24): il gioco non ha l'arbitro, quindi queste prove si
+// SALTANO, col motivo scritto. Solo se index.html è IDENTICO a quello della v6.22 (commit b52eae8) salvo il numero:
+// un gioco senza arbitro ma diverso fa fallire le prove (non si aggira il controllo).
+const fs = require("node:fs");
+const { execSync } = require("node:child_process");
+const COMMIT_V622 = "b52eae8";
+function senzaArbitro() {
+  const radice = path.join(__dirname, "../..");
+  const html = fs.readFileSync(path.join(radice, "index.html"), "utf8");
+  if (html.includes("async function chiamaArbitro(")) return false;
+  const senzaNumero = (h) => h.replace(/const APP_VERSION = "v[0-9.]+";/, "");
+  const v622 = execSync(`git -C "${radice}" show ${COMMIT_V622}:index.html`, { maxBuffer: 64 * 1024 * 1024 }).toString();
+  if (senzaNumero(html) === senzaNumero(v622)) return "ripristino d'emergenza: il gioco è la v6.22 (senza arbitro), cambia solo il numero";
+  throw new Error("index.html non ha l'arbitro ma non è la v6.22: le prove dell'arbitro non si possono saltare");
+}
+
+module.exports = { giocaDaSolo, fermaGioco, conTelefono, posizioneVincente, senzaArbitro };

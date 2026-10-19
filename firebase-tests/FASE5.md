@@ -75,7 +75,7 @@ Per questo l'arbitro si accende **dopo** le regole 5A.
 
 | # | Passo | Chi | Prova prima di andare avanti | Ritorno indietro |
 |---|---|---|---|---|
-| R0 | Unire la PR della v6.23 (arbitro spento) | utente/Claude su ok | "Verifica del sito" = v6.23; 2 telefoni giocano come prima | PR di ripristino rifatta come **v6.24** (gioco v6.22): la #31 (v6.23) va rinumerata |
+| R0 | Unire la PR della v6.23 (arbitro spento) | utente/Claude su ok | "Verifica del sito" = v6.23; 2 telefoni giocano come prima | ripristino v6.24 = gioco v6.22 (branch `claude/ripristino-v624`, vedi sotto) |
 | R1 | Attesa: nessun telefono collegato più vecchio della v6.22 | — | export → `node fase5/controlla-pronti.js export.json` → "Pronto per 5A: SÌ" (ripetere in orari diversi) | — |
 | R2 | Pubblicare `regole/proposte.json` (5A) | utente in console | simulatore: lettura `/profiles/x` senza login = Negato, `/config/arbitro` = Consentito; 2 telefoni: stanza, mosse, classifica, "Sono io" col codice | incollare `regole/transizione.json` |
 | R3 🔶 | Piano **Blaze** + **avviso di spesa** (es. 5 €) | utente | — | tornare a Spark (prima eliminare la funzione) |
@@ -86,6 +86,18 @@ Per questo l'arbitro si accende **dopo** le regole 5A.
 
 Prima di R2, R5 e R7 serve un export e la copia delle regole del momento, conservati con la data, come nelle Fasi
 0-2. Vanno controllati con `fase0/verifica.js` e `fase2/controlla-dopo.js`.
+
+## Ripristino del gioco dopo R0 (solo emergenza)
+Branch `claude/ripristino-v624`: `index.html` e `sw.js` della v6.22 (commit b52eae8) con numero **v6.24**. Mai tornare a
+"v6.22": i telefoni già passati alla v6.23 vedrebbero gli altri come vecchi, e il controllo "la versione deve salire" lo
+blocca. Le regole e i dati NON si toccano (la v6.22 funziona con le regole di oggi e con la 5A).
+1. aprire (o aggiornare con "Update branch") la PR di `claude/ripristino-v624` verso `main`;
+2. aspettare "Tutti i controlli" verde: le prove dell'arbitro dal vivo risultano SALTATE col motivo "ripristino
+   d'emergenza: il gioco è la v6.22", e solo se `index.html` è identico alla v6.22 salvo il numero; tutto il resto verde;
+3. unire → "Verifica del sito" deve dire "trovata v6.24".
+La vecchia PR #31 (v6.23 = gioco v6.16) è SUPERATA: non va più usata (v6.23 è il numero della Fase 5).
+Se l'arbitro è già acceso (R5) prima si rimette `config/arbitro` = false; con le regole 5B (R7) il ripristino alla v6.22
+non basta: prima si incolla di nuovo `regole/proposte.json`.
 
 ## Dati esistenti (migrazione)
 

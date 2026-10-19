@@ -27,7 +27,7 @@ volta (ogni unione in main ripubblica il sito: passerebbero sul sito v6.17, v6.1
 | 3 | ⚙️ → 🔑 codice; dal secondo telefono "Sono io" | chiede il codice; giusto = rientra, sbagliato = no | — |
 | 5 | simulatore: `/games/PROVA/turnColor` senza login | Negato | incollare `regole/transizione.json` |
 
-## Ripristino del gioco (PR #31, solo emergenza)
+## Ripristino del gioco (PR #31, solo emergenza) — SUPERATO: dopo la v6.23 vale `FASE5.md` (ripristino v6.24)
   1. aggiornare il branch `claude/ripristino-v623` con main (pulsante "Update branch" della PR #31);
   2. cambiare la base della PR #31 in `main` e toglierla dalla bozza;
   3. aspettare "Tutti i controlli" verde: le prove delle funzioni v6.17-v6.22 risultano SALTATE col motivo, tutte le
