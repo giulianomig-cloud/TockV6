@@ -3349,7 +3349,6 @@ html:not([data-skin]) .dealer-pile .card-btn.dealer-under { z-index: 3; filter: 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" crossorigin="anonymous"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js" crossorigin="anonymous"></script>
 
 <script>
 // Configurazione del progetto Firebase "ttok-21ebe".
@@ -5369,37 +5368,6 @@ function trColors(s) {
 }
 
 const I18N_EN = {
-  // --- Arbitro sul server (v6.23) ---
-  "Mossa non valida.": "Invalid move.",
-  "Questa mossa non è permessa.": "This move is not allowed.",
-  "Il Jack ora non si può giocare.": "The Jack can't be played now.",
-  "Scambio del Jack non permesso.": "Jack swap not allowed.",
-  "Il 7 ora non si può giocare.": "The 7 can't be played now.",
-  "Distribuzione del 7 mancante.": "Missing 7 split.",
-  "Distribuzione del 7 non permessa.": "This 7 split is not allowed.",
-  "Tipo di mossa sconosciuto.": "Unknown kind of move.",
-  "Questa stanza non usa l'arbitro.": "This room doesn't use the server referee.",
-  "Azione sconosciuta.": "Unknown action.",
-  "Non sei seduto in questa stanza.": "You're not seated in this room.",
-  "Mancano giocatori.": "Players are missing.",
-  "La partita non è ancora cominciata.": "The game hasn't started yet.",
-  "La partita è già finita.": "The game is already over.",
-  "Carta mancante.": "Missing card.",
-  "Ora non si gioca.": "It's not playing time now.",
-  "Non è il tuo turno.": "It's not your turn.",
-  "Questa carta non è nella tua mano.": "This card is not in your hand.",
-  "Nessuna pedina da muovere.": "No pawn to move.",
-  "Questa carta si può giocare: non si brucia.": "This card can be played: it can't be burned.",
-  "La partita non è finita.": "The game isn't over.",
-  "Stanza non valida.": "Invalid room.",
-  "La stanza non esiste.": "The room doesn't exist.",
-  "Serve il login.": "Sign-in is required.",
-  "Questa azione la gestisce il server: riprova.": "The server handles this action: try again.",
-  "Serve la connessione al server (accesso non riuscito). Riprova tra poco.": "A connection to the server is needed (sign-in failed). Try again shortly.",
-  "carta non trovata in mano": "card not found in hand",
-  "hai già scelto la tua carta": "you've already chosen your card",
-  "non è il momento dello scambio": "it's not time for the exchange",
-  "il server ha avuto un problema. Riprova.": "the server had a problem. Try again.",
   // --- Codice di rientro (v6.20) ---
   "Per riprendere il posto serve il codice di rientro: lo trova chi era seduto qui, sul suo telefono, in ⚙️ Impostazioni.": "To take back this seat you need the rejoin code: whoever was sitting here can find it on their phone under ⚙️ Settings.",
   "Codice di rientro sbagliato.": "Wrong rejoin code.",
@@ -6041,7 +6009,6 @@ function initFirebase() {
     try { if (firebase.auth) firebase.auth().useEmulator("http://127.0.0.1:9099", { disableWarnings: true }); } catch (e) {}
   }
   startAnonymousAuth();
-  waitAuth().then(leggiConfigArbitro); // v6.23: arbitro sul server acceso o spento (config/arbitro)
   // Differenza fra l'orologio del telefono e quello del server: serve a
   // confrontare gli orari scritti da telefoni diversi (vedi serverNow).
   try { db.ref(".info/serverTimeOffset").on("value", (s) => { serverTimeOffset = Number(s.val()) || 0; }); } catch (e) {}
@@ -6291,7 +6258,6 @@ function leaderboardRef() {
 // Chi esce prima della fine viene contato quando riapre la partita finita.
 async function creditMyResult(state) {
   if (!state || !state.winnerTeam || !myRoomId) return;
-  if (usaArbitro(state)) return; // v6.23: con l'arbitro la classifica la scrive il server
   const uid = await waitAuth();
   if (!uid) return;
   const color = COLORS.find((c) => state.players[c] && !state.players[c].isBot && state.players[c].uid === uid);
@@ -6348,13 +6314,8 @@ function codesRef() {
 }
 
 function watchRoom(roomId, callback) {
-  let stanza = null;
-  // v6.23: nelle stanze con l'arbitro la partita arriva da arbitro/<stanza>/… e si unisce alla stanza.
-  const avvisa = () => callback(normalizeState(unisciArbitro(stanza ? JSON.parse(JSON.stringify(stanza)) : stanza)));
   roomRef(roomId).on("value", (snap) => {
-    stanza = snap.val();
-    if (usaArbitro(stanza)) ascoltaArbitro(roomId, () => { if (roomId === myRoomId) avvisa(); });
-    avvisa();
+    callback(normalizeState(snap.val()));
   });
 }
 
@@ -6464,133 +6425,6 @@ function setupOwnPresence(roomId, color) {
   }
 }
 
-// ---- Arbitro sul server (v6.23) ----------------------------------------
-// Con l'arbitro (Cloud Function "arbitro", vedi functions/) la partita la gestisce il SERVER: mazzo e mani
-// restano segreti, ogni mossa viene controllata e la classifica la scrive solo lui. Le stanze NUOVE lo usano
-// quando in Firebase c'è config/arbitro = true (si accende dalla console, solo dopo aver pubblicato la funzione).
-// La stanza (games/<stanza>) resta dei telefoni: posti, sala d'attesa, chat. La partita arriva da
-//   arbitro/<stanza>/pub        (pubblica: pedine, turno, registro, quante carte ha ognuno)
-//   arbitro/<stanza>/mani/<uid> (privata: le MIE carte)
-// e viene unita qui in un unico stato, uguale a quello di sempre (le carte degli altri sono coperte).
-let ARBITRO_ATTIVO = false;
-const CARTA_COPERTA = "??";
-const CAMPI_STANZA_ARBITRO = ["players", "roomMode", "draft", "pending", "chat", "chatBotRepliedToId", "arbitro", "sessione",
-  "leaderboardClaimed", "stats", "creata"];
-const CAMPI_SPECCHIO_ARBITRO = ["phase", "turnStartedAt", "gameId", "winnerTeam"];
-function leggiConfigArbitro() {
-  return db.ref("config/arbitro").get()
-    .then((s) => { ARBITRO_ATTIVO = s.val() === true; })
-    .catch(() => { ARBITRO_ATTIVO = false; }); // regole senza config/: arbitro spento, si gioca come prima
-}
-// Da chiamare su ogni stanza appena creata (newGameState) prima di scriverla.
-function preparaStanzaNuova(st) {
-  if (ARBITRO_ATTIVO && st) {
-    st.arbitro = true;
-    st.sessione = newGameId();
-  }
-  return st;
-}
-function usaArbitro(st) {
-  return !!(st && st.arbitro === true);
-}
-let arbitroPub = null;
-let arbitroMano = null;
-let arbitroAscolto = null; // { roomId, uid, refs: [] }
-let arbitroAvvisa = null;
-function fermaArbitro() {
-  if (arbitroAscolto) arbitroAscolto.refs.forEach((r) => r.off("value"));
-  arbitroAscolto = null;
-  arbitroAvvisa = null;
-  arbitroPub = null;
-  arbitroMano = null;
-}
-function ascoltaArbitro(roomId, avvisa) {
-  arbitroAvvisa = avvisa;
-  const uid = myUid;
-  if (arbitroAscolto && arbitroAscolto.roomId === roomId && arbitroAscolto.uid === uid) return;
-  const avvisaOra = arbitroAvvisa;
-  fermaArbitro();
-  arbitroAvvisa = avvisaOra;
-  const refs = [db.ref("arbitro/" + roomId + "/pub")];
-  if (uid) refs.push(db.ref("arbitro/" + roomId + "/mani/" + uid));
-  arbitroAscolto = { roomId, uid, refs };
-  refs[0].on("value", (snap) => { arbitroPub = snap.val(); if (arbitroAvvisa) arbitroAvvisa(); }, (e) => console.warn("arbitro pub", e && e.code));
-  if (refs[1]) refs[1].on("value", (snap) => { arbitroMano = snap.val(); if (arbitroAvvisa) arbitroAvvisa(); }, (e) => console.warn("arbitro mano", e && e.code));
-}
-// Stanza + partita del server → stato completo come quello di sempre.
-function unisciArbitro(stanza) {
-  if (!usaArbitro(stanza)) return stanza;
-  const out = {};
-  for (const k of CAMPI_STANZA_ARBITRO) if (stanza[k] !== undefined) out[k] = stanza[k];
-  for (const k of CAMPI_SPECCHIO_ARBITRO) if (stanza[k] !== undefined) out[k] = stanza[k];
-  const pub = arbitroPub && arbitroAscolto && arbitroAscolto.roomId && arbitroPub.sessione === stanza.sessione ? arbitroPub : null;
-  if (!pub) {
-    // Partita del server non ancora arrivata: finché la stanza non è in gioco si mostra la sala d'attesa.
-    if (!out.phase || out.phase === "lobby") out.phase = "lobby";
-    return out;
-  }
-  for (const [k, v] of Object.entries(pub)) {
-    if (["carteInMano", "scambioFatto", "carteNelMazzo", "rev"].includes(k)) continue;
-    out[k] = JSON.parse(JSON.stringify(v));
-  }
-  const mano = arbitroMano && arbitroMano.gameId === pub.gameId ? arbitroMano : null;
-  const quante = pub.carteInMano || {};
-  const fatto = pub.scambioFatto || {};
-  out.hands = {};
-  out.pendingExchange = {};
-  out.lastReceivedCard = {};
-  for (const c of COLORS) {
-    const mia = mano && mano.colore === c;
-    const mioPosto = !!(myUid && out.players && out.players[c] && out.players[c].uid === myUid);
-    // Le mie carte: solo quelle vere (finché non arrivano dal server la mano resta vuota, mai carte coperte).
-    out.hands[c] = mia ? (mano.carte || []).slice() : mioPosto ? [] : new Array(quante[c] || 0).fill(CARTA_COPERTA);
-    if (fatto[c]) out.pendingExchange[c] = (mia && mano.scambio) || CARTA_COPERTA;
-    if (mia && mano.ricevuta) out.lastReceivedCard[c] = mano.ricevuta;
-  }
-  out.deck = new Array(pub.carteNelMazzo || 0).fill(CARTA_COPERTA);
-  return out;
-}
-let _arbitroFn = null;
-async function chiamaArbitro(azione, dati) {
-  await waitAuth();
-  if (!myUid) throw new Error("Serve la connessione al server (accesso non riuscito). Riprova tra poco.");
-  if (!_arbitroFn) {
-    const f = firebase.app().functions("europe-west1");
-    // Solo per le prove sul computer: la funzione gira nell'emulatore col progetto finto "demo-tock".
-    _arbitroFn = FIREBASE_EMULATOR
-      ? f.httpsCallableFromURL("http://127.0.0.1:5001/demo-tock/europe-west1/arbitro", { timeout: 20000 })
-      : f.httpsCallable("arbitro", { timeout: 20000 });
-  }
-  const r = await _arbitroFn(Object.assign({ stanza: myRoomId, azione }, dati || {}));
-  return r && r.data;
-}
-// Seduto (anche dopo "Sono io" da un altro telefono) ma senza le proprie carte: il server le ripubblica.
-let _arbitroManoChiesta = null;
-function chiediManoSeServe(state) {
-  if (!usaArbitro(state) || !myUid || !myColor || state.phase === "lobby" || state.phase === "finished") return;
-  const p = state.players && state.players[myColor];
-  if (!p || p.isBot || p.uid !== myUid || !arbitroPub || arbitroPub.sessione !== state.sessione) return;
-  if (arbitroMano && arbitroMano.colore === myColor && arbitroMano.gameId === arbitroPub.gameId) return;
-  const chiave = [myRoomId, state.sessione, arbitroPub.gameId, myUid, myColor].join("|");
-  if (_arbitroManoChiesta === chiave) return;
-  _arbitroManoChiesta = chiave;
-  setTimeout(() => {
-    if (arbitroMano && arbitroMano.colore === myColor) return;
-    chiamaArbitro("aggiorna").catch((e) => { _arbitroManoChiesta = null; console.warn("aggiorna", e); });
-  }, 1500); // di solito la mano arriva da sola: si chiede solo se dopo un attimo manca ancora
-}
-// Per "Gioca subito" e le stanze a estrazione: a posti completi la partita la fa partire il server.
-let _arbitroAvviata = null;
-function avviaArbitroSeServe(state) {
-  if (!usaArbitro(state) || state.phase !== "lobby" || state.roomMode !== "draw") return;
-  if (!COLORS.every((c) => state.players && state.players[c])) return;
-  if (!COLORS.some((c) => state.players[c] && state.players[c].token === myToken)) return;
-  const chiave = myRoomId + "|" + state.sessione + "|" + state.gameId;
-  if (_arbitroAvviata === chiave) return;
-  _arbitroAvviata = chiave;
-  chiamaArbitro("avvia").catch((e) => { _arbitroAvviata = null; console.error("avvia", e); });
-}
-
 async function writeState(roomId, state) {
   await waitAuth();
   return roomRef(roomId).set(state);
@@ -6634,7 +6468,7 @@ async function claimRoomMode(roomId, mode) {
       return current; // già creata (da noi o da un altro) — non toccare
     }
     createdNew = true;
-    return preparaStanzaNuova(newGameState({}, mode));
+    return newGameState({}, mode);
   });
   // Fuori dalla transazione (che può essere richiamata più volte in caso di
   // contesa): se l'ultimo tentativo ha davvero creato la stanza ed è stato
@@ -6668,22 +6502,6 @@ async function updateState(roomId, mutatorFn) {
           // decide SOLO dopo, con una lettura diretta indipendente — vedi sotto.
           if (current === null) return;
           try {
-            if (usaArbitro(current)) {
-              // v6.23: con l'arbitro qui si cambia SOLO la stanza (posti, chat…). Se la funzione tocca la partita
-              // è un errore: la partita la cambia solo il server (chiamaArbitro).
-              const unito = normalizeState(unisciArbitro(JSON.parse(JSON.stringify(current))));
-              const partita = (st) => JSON.stringify(Object.keys(st).filter((k) => !CAMPI_STANZA_ARBITRO.includes(k)).sort().map((k) => [k, st[k]]));
-              const prima = partita(unito);
-              mutatorFn(unito);
-              if (partita(unito) !== prima) throw Object.assign(new Error("Questa azione la gestisce il server: riprova."), { code: "ARBITRO" });
-              const fuori = JSON.parse(JSON.stringify(current));
-              for (const k of CAMPI_STANZA_ARBITRO) {
-                if (unito[k] === undefined) delete fuori[k];
-                else fuori[k] = unito[k];
-              }
-              justWon = false;
-              return fuori;
-            }
             const copy = normalizeState(JSON.parse(JSON.stringify(current)));
             const wasFinished = !!copy.winnerTeam;
             mutatorFn(copy);
@@ -8299,7 +8117,7 @@ function renderPawns(svg, board, pawns, lastSwap, lastCapture, lastHomeEntry, la
 // Bumped by hand each time a new build is produced — shown in the lobby so
 // it's obvious at a glance whether you're on the latest version, instead
 // of guessing from a stale browser tab or cache.
-const APP_VERSION = "v6.23";
+const APP_VERSION = "v6.24";
 
 let myColor = null;
 let myRoomId = null;
@@ -9586,7 +9404,7 @@ async function joinManualRoom(roomId) {
         if (current === null) {
           const players = {};
           players[myColor] = { name: myName, token: claimToken, playerId: myPlayerId || null, uid: myUid || null };
-          return preparaStanzaNuova(newGameState(players, "manual"));
+          return newGameState(players, "manual");
         }
         const state = normalizeState(JSON.parse(JSON.stringify(current)));
         const existing = state.players && state.players[myColor];
@@ -9721,7 +9539,7 @@ async function assignBotToColor(roomId, color, onDone, botLevel) {
     if (!snap.exists()) {
       const players = {};
       players[color] = { name: pickBotName([]), token: "BOT-" + color, isBot: true, botLevel: level };
-      const state = preparaStanzaNuova(newGameState(players, "manual"));
+      const state = newGameState(players, "manual");
       await writeState(roomId, state);
     } else {
       await updateState(roomId, (state) => {
@@ -10081,10 +9899,10 @@ async function mmJoinRoom(roomId, recycle, token) {
     .transaction((current) => {
       outcome = "taken";
       let st;
-      if (current === null) st = preparaStanzaNuova(newGameState({}, "draw"));
+      if (current === null) st = newGameState({}, "draw");
       else {
         st = normalizeState(JSON.parse(JSON.stringify(current)));
-        if (recycle && (st.phase !== "lobby" || mmIsStuckLobby(st)) && mmFingerprint(st) === recycle) st = preparaStanzaNuova(newGameState({}, "draw"));
+        if (recycle && (st.phase !== "lobby" || mmIsStuckLobby(st)) && mmFingerprint(st) === recycle) st = newGameState({}, "draw");
         else if (!(st.draft && st.draft.players && st.draft.players[token]) && !mmIsWaitingRoom(st)) return undefined;
       }
       const d = st.draft;
@@ -10274,7 +10092,7 @@ async function mmCancel() {
       if (st.draft.seen) delete st.draft.seen[cur.token];
       if (Array.isArray(st.draft.order)) st.draft.order = st.draft.order.filter((t) => t !== cur.token);
       // rimasti solo computer? si svuota la stanza, così è subito libera
-      if (Object.keys(st.draft.players).every((t) => st.draft.botTokens && st.draft.botTokens[t])) return preparaStanzaNuova(newGameState({}, "draw"));
+      if (Object.keys(st.draft.players).every((t) => st.draft.botTokens && st.draft.botTokens[t])) return newGameState({}, "draw");
       return st;
     }).catch(() => {});
   }
@@ -10495,7 +10313,7 @@ async function joinDraftRoom(roomId) {
       blockedReason = null;
       try {
         if (current === null) {
-          const state = preparaStanzaNuova(newGameState({}, "draw"));
+          const state = newGameState({}, "draw");
           state.draft.players[myToken] = myName;
           state.draft.order.push(myToken);
           if (!state.draft.playerIds) state.draft.playerIds = {};
@@ -10706,8 +10524,6 @@ function maybeFinalizeDraft(state) {
   // click su un pulsante che potrebbe non essere ovvio da trovare. Si
   // distribuisce quindi subito la prima mano (vedi la nota su
   // dealAndRevealDealer per perché non si aspetta più l'animazione).
-  // v6.23: con l'arbitro le carte le distribuisce il server (avviaArbitroSeServe).
-  if (usaArbitro(state)) return;
   dealAndRevealDealer(state);
 }
 
@@ -11139,7 +10955,6 @@ function leaveGameToHome(ev) {
 // la schermata di gioco non c'era più (errore "wrap.innerHTML" su #hand-wrap).
 function detachFromGameRoom() {
   if (myRoomId) roomRef(myRoomId).off("value");
-  fermaArbitro();
   if (presenceListenerRef) { presenceListenerRef.off(); presenceListenerRef = null; }
   if (myPresenceRef) {
     myPresenceRef.onDisconnect().cancel().catch(() => {});
@@ -12207,7 +12022,6 @@ function scheduleBotAction(fn) {
 }
 
 async function botSubmitExchange() {
-  if (usaArbitro(currentState)) { await chiamaArbitro("bot"); return; }
   await updateState(myRoomId, (state) => {
     if (state.phase !== "exchanging") return;
     for (const c of COLORS) {
@@ -12594,7 +12408,6 @@ function botTakeTurn(state) {
 }
 
 async function botPlayTurn() {
-  if (usaArbitro(currentState)) { await chiamaArbitro("bot"); return; }
   await updateState(myRoomId, (state) => botTakeTurn(state));
 }
 
@@ -13553,8 +13366,6 @@ function onStateChange(state) {
     }
   }
   ensureMySeatKey(state).catch(() => {});
-  avviaArbitroSeServe(state); // v6.23: "Gioca subito"/estrazione con l'arbitro: a posti completi parte il server
-  chiediManoSeServe(state);
   maybeAdvanceBotTurn(state);
   maybeAdvanceBotChat(state);
   maybePlaySounds(state);
@@ -13789,7 +13600,6 @@ async function animateDealerDraw(sequence, names) {
 // più tardi non si ritrova a rivedere una rivelazione vecchia di una mano
 // già in corso da un pezzo.
 async function finishDealerDraw() {
-  if (usaArbitro(currentState)) { chiamaArbitro("estrazioneVista").catch(() => {}); return; }
   try {
     await updateState(myRoomId, (state) => {
       if (!state.dealerDraw) return; // già ripulito da un altro client
@@ -13851,10 +13661,6 @@ function renderStartControls(state) {
 }
 
 async function startGame() {
-  if (usaArbitro(currentState)) {
-    try { await chiamaArbitro("avvia"); } catch (e) { showToast("Non è partita: " + describeError(e)); console.error(e); }
-    return;
-  }
   try {
     await updateState(myRoomId, (state) => {
       if (COLORS.some((c) => !state.players[c])) throw new Error("mancano giocatori");
@@ -14009,8 +13815,7 @@ function flyGivenCard(btn) {
 async function sendExchangeCard(card) {
   keepAudioAlive();
   try {
-    if (usaArbitro(currentState)) await chiamaArbitro("scambio", { carta: card });
-    else await updateState(myRoomId, (state) => {
+    await updateState(myRoomId, (state) => {
       submitExchangeCard(state, myColor, card);
     });
   } catch (e) {
@@ -14553,7 +14358,6 @@ function suitIconSvg(suit, size, glossy) {
 // filigrana): UNICA per le carte in mano e per quella al centro del
 // tabellone, così hanno lo stesso aspetto (chiesto).
 function buildCardFace(card) {
-  if (card === CARTA_COPERTA) return [el("span", { class: "card-corner card-corner-tl" }, "?"), el("span", {}), el("span", { class: "card-corner card-corner-br" }, "?")];
   const [r, s] = card.split("-");
   const cornerSuit = () => {
     const i = suitIconSvg(s, 10);
@@ -14632,8 +14436,7 @@ async function onCardClick(card, evt) {
     }
     setMoveInFlight(true);
     try {
-      if (usaArbitro(currentState)) await chiamaArbitroMossa("brucia", { carta: card });
-      else await runUpdate((state) => {
+      await runUpdate((state) => {
         // Burn from the current turn's OWN hand (same fix as applyMove — see
         // its comment). Using `active` here was the bug: when a player's
         // pawns are all home and they're playing a partner's turn, the card
@@ -14937,9 +14740,8 @@ function describeError(e) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return "sei offline: controlla la connessione e riprova.";
   }
-  const code = ((e && e.code) || "").toString().toUpperCase().replace(/^FUNCTIONS\//, ""); // errori dell'arbitro (v6.23)
+  const code = ((e && e.code) || "").toString().toUpperCase();
   const msg = ((e && e.message) || "").toString();
-  if (code === "INTERNAL") return "il server ha avuto un problema. Riprova.";
   if (code === "PERMISSION_DENIED") {
     return "il server ha rifiutato la richiesta. Riprova, e se continua segnalalo.";
   }
@@ -15672,8 +15474,7 @@ async function playMove(active, card, move) {
   }
   setMoveInFlight(true);
   try {
-    if (usaArbitro(currentState)) await chiamaArbitroMossa("mossa", { carta: card, mossa: move });
-    else await runUpdate((state) => {
+    await runUpdate((state) => {
       applyMove(state, active, card, move);
       if (state.phase !== "finished") advanceTurn(state);
     });
@@ -15700,17 +15501,6 @@ function isSelfCapture(state, color, move) {
     return !!occ && occ.color === color;
   }
   return false;
-}
-
-// Come runUpdate, ma la mossa la applica l'arbitro sul server (v6.23).
-async function chiamaArbitroMossa(azione, dati) {
-  try {
-    return await chiamaArbitro(azione, dati);
-  } catch (e) {
-    showToast("Non sono riuscito a salvare la mossa: " + describeError(e));
-    console.error(e);
-    throw e;
-  }
 }
 
 async function runUpdate(mutatorFn) {
@@ -16840,8 +16630,7 @@ async function startNewGame(btn) {
   keepAudioAlive();
   fbBusy(btn, "Preparo la rivincita…");
   try {
-    if (usaArbitro(currentState)) await chiamaArbitroMossa("rivincita");
-    else await runUpdate((state) => {
+    await runUpdate((state) => {
       resetForNewGame(state);
     });
     fbOk(btn, "Si riparte!");
