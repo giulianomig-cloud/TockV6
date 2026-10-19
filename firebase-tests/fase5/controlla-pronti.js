@@ -2,7 +2,8 @@
 //   node fase5/controlla-pronti.js export.json
 // Passo "5A" (regole proposte.json): nessun telefono collegato con una versione più vecchia della v6.22.
 // Passo "5B" (regole arbitro.json): arbitro acceso, nessun telefono collegato più vecchio della v6.23 e nessuna
-// partita "di prima" (senza arbitro) ancora in corso. Non stampa nomi né carte: solo conteggi.
+// partita "di prima" (senza arbitro) ancora in corso né stanze AUTO "di prima" in sala d'attesa (con le regole 5B non si
+// potrebbero più usare né riciclare). Non stampa nomi né carte: solo conteggi.
 const fs = require("node:fs");
 
 function versione(v) {
@@ -28,13 +29,17 @@ function analizza(dati, adesso = Date.now()) {
     }
   }
   const sotto = (min) => collegati.filter((v) => confronta(v, min) < 0).length;
-  let classicheInCorso = 0, conArbitro = 0, classiche = 0;
-  for (const g of Object.values(games)) {
+  let classicheInCorso = 0, conArbitro = 0, classiche = 0, autoDiPrimaInAttesa = 0, postiSenzaUid = 0;
+  for (const [codice, g] of Object.entries(games)) {
     if (!g || typeof g !== "object") continue;
     if (g.arbitro === true) { conArbitro++; continue; }
     classiche++;
     const ferma = g.turnStartedAt && adesso - g.turnStartedAt > 24 * 3600000;
-    if (g.phase && g.phase !== "lobby" && g.phase !== "finished" && !ferma) classicheInCorso++;
+    const inCorso = g.phase && g.phase !== "lobby" && g.phase !== "finished";
+    if (inCorso && !ferma) classicheInCorso++;
+    if (inCorso) postiSenzaUid += Object.values(g.players || {}).filter((p) => p && !p.isBot && !p.uid).length;
+    // Con le regole 5B una stanza AUTO "di prima" in sala d'attesa non si può né usare né riciclare.
+    if (codice.startsWith("AUTO-") && (!g.phase || g.phase === "lobby")) autoDiPrimaInAttesa++;
   }
   const arbitroAcceso = !!(dati && dati.config && dati.config.arbitro === true);
   const r = {
@@ -45,11 +50,13 @@ function analizza(dati, adesso = Date.now()) {
     stanzeConArbitro: conArbitro,
     stanzeDiPrima: classiche,
     partiteDiPrimaInCorso: classicheInCorso,
+    autoDiPrimaInAttesa,
+    postiSenzaUidInPartite: postiSenzaUid,
     arbitroAcceso,
     vociClassifica: Object.keys((dati && dati.leaderboard) || {}).length,
   };
   r.pronto5A = r.sottoV622 === 0;
-  r.pronto5B = arbitroAcceso && r.sottoV623 === 0 && r.partiteDiPrimaInCorso === 0;
+  r.pronto5B = arbitroAcceso && r.sottoV623 === 0 && r.partiteDiPrimaInCorso === 0 && r.autoDiPrimaInAttesa === 0;
   return r;
 }
 
@@ -59,6 +66,7 @@ if (require.main === module) {
   const r = analizza(JSON.parse(fs.readFileSync(file, "utf8")));
   console.log(`Telefoni collegati ora: ${r.collegati} (più vecchi della v6.22: ${r.sottoV622}, della v6.23: ${r.sottoV623})`);
   console.log(`Stanze: ${r.stanze} · con l'arbitro: ${r.stanzeConArbitro} · di prima: ${r.stanzeDiPrima} (in corso nelle ultime 24 ore: ${r.partiteDiPrimaInCorso})`);
+  console.log(`Stanze AUTO "di prima" in sala d'attesa: ${r.autoDiPrimaInAttesa} · posti senza uid in partite iniziate: ${r.postiSenzaUidInPartite}`);
   console.log(`Arbitro acceso (config/arbitro): ${r.arbitroAcceso ? "SÌ" : "NO"} · voci in classifica: ${r.vociClassifica}`);
   console.log(`Pronto per le regole 5A (proposte.json): ${r.pronto5A ? "SÌ" : "NO"}`);
   console.log(`Pronto per le regole 5B (arbitro.json): ${r.pronto5B ? "SÌ" : "NO"}`);

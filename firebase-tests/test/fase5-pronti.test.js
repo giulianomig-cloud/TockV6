@@ -38,3 +38,17 @@ test("pronto per 5A e 5B solo quando tutti hanno aggiornato e non ci sono partit
   d.presence.AUTO1.red.c2 = "v6.22";
   assert.equal(analizza(d, ORA).pronto5B, false);
 });
+
+test("5B: una stanza AUTO di prima in sala d'attesa blocca il passo (con 5B non si userebbe né riciclerebbe)", () => {
+  const d = { config: { arbitro: true }, presence: {}, games: {
+    "AUTO-1": { roomMode: "draw", phase: "lobby", draft: { players: { t: "x" } } },
+    "AUTO-2": { arbitro: true, sessione: "s", phase: "lobby" },
+    PRIVATA: { phase: "playing", turnStartedAt: ORA - 5 * 24 * 3600000, players: { red: { name: "a", token: "t" } } },
+  } };
+  const r = analizza(d, ORA);
+  assert.equal(r.autoDiPrimaInAttesa, 1);
+  assert.equal(r.postiSenzaUidInPartite, 1);
+  assert.equal(r.pronto5B, false);
+  delete d.games["AUTO-1"];
+  assert.equal(analizza(d, ORA).pronto5B, true);
+});

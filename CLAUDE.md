@@ -200,6 +200,10 @@
 - Prove: `functions` (npm test), `firebase-tests` (npm test, npm run test-arbitro), job CI "Arbitro sul server".
 - Ripristino dopo la v6.23: branch `claude/ripristino-v624` (gioco v6.22 col numero v6.24; le prove dell'arbitro si
   saltano SOLO se index.html è identico alla v6.22, `senzaArbitro()` in arbitro-e2e/aiuti.js). La PR #31 (v6.23 = v6.16) è SUPERATA.
+- R0 FATTO (19/10): v6.23 online (82e2958), arbitro spento. R1 FATTO (20/10): `firebase-tests/fase5/R1.md` (export del
+  19/10 = prima della v6.23; tutte le stanze di prima senza uid; prova `npm run r2-prova` con BACKUP_DATI 4/4; criterio:
+  non prima del 22/10 pomeriggio + 3 export + controllo "v6.23" sui telefoni). Trovato per R7: stanze AUTO "di prima"
+  in sala d'attesa bloccate con 5B → soluzione A (regola) o B (cancellarle), da decidere prima di R7.
 - Decisioni dell'utente ancora aperte: Blaze + avviso di spesa, chi pubblica la funzione, partite coi computer in
   classifica, App Check.
 - Deciso dall'utente (19/10): prima di andare sugli store la classifica si AZZERA TUTTA (export di copia prima, poi
