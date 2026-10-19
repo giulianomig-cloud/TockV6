@@ -66,7 +66,8 @@ legale. Serve un programma sul server, l'**arbitro**.
 | v6.16 | ✅ | ❌ scritture rifiutate | ❌ |
 | v6.22 | ✅ | ✅ | ❌ non crea stanze (servono `arbitro`+`sessione`) |
 | v6.23, arbitro spento | ✅ | ✅ | ❌ (come la v6.22) |
-| v6.23, arbitro acceso | ✅ (in lettura servono i percorsi di 5A: arbitro di fatto spento) | ✅ | ✅ |
+| v6.23, arbitro acceso | ✅ (in lettura servono i percorsi di 5A: arbitro di fatto spento) | ✅ | ⚠️ le stanze AUTO "di prima" in attesa con un nome fantasma restano bloccate |
+| v6.24 | come la v6.23 | ✅ | ✅ (recupera da sola le stanze AUTO "di prima" in attesa) |
 
 Con le regole di transizione `config/` non è leggibile, quindi la v6.23 resta con l'arbitro spento.
 Per questo l'arbitro si accende **dopo** le regole 5A.
@@ -91,17 +92,23 @@ problema delle stanze AUTO "di prima" in attesa con le regole 5B).
 Prima di R2, R5 e R7 serve un export e la copia delle regole del momento, conservati con la data, come nelle Fasi
 0-2. Vanno controllati con `fase0/verifica.js` e `fase2/controlla-dopo.js`.
 
-## Ripristino del gioco dopo R0 (solo emergenza)
-Branch `claude/ripristino-v624`: `index.html` e `sw.js` della v6.22 (commit b52eae8) con numero **v6.24**. Mai tornare a
-"v6.22": i telefoni già passati alla v6.23 vedrebbero gli altri come vecchi, e il controllo "la versione deve salire" lo
-blocca. Le regole e i dati NON si toccano (la v6.22 funziona con le regole di oggi e con la 5A).
-1. aprire (o aggiornare con "Update branch") la PR di `claude/ripristino-v624` verso `main`;
-2. aspettare "Tutti i controlli" verde: le prove dell'arbitro dal vivo risultano SALTATE col motivo "ripristino
-   d'emergenza: il gioco è la v6.22", e solo se `index.html` è identico alla v6.22 salvo il numero; tutto il resto verde;
-3. unire → "Verifica del sito" deve dire "trovata v6.24".
-La vecchia PR #31 (v6.23 = gioco v6.16) è SUPERATA: non va più usata (v6.23 è il numero della Fase 5).
-Se l'arbitro è già acceso (R5) prima si rimette `config/arbitro` = false; con le regole 5B (R7) il ripristino alla v6.22
-non basta: prima si incolla di nuovo `regole/proposte.json`.
+## Ripristino del gioco (solo emergenza)
+Gioco attuale: **v6.24**. Ripristino: branch `claude/ripristino-v625` = `index.html` e `sw.js` della **v6.23** (commit
+82e2958) col numero **v6.25**. La v6.23 sa già gestire l'arbitro, quindi il ripristino funziona anche dopo R5.
+Non si torna mai a un numero già usato: i telefoni già aggiornati vedrebbero gli altri come vecchi, e il controllo
+"la versione deve salire" lo blocca. Le regole e i dati NON si toccano.
+1. aprire (o aggiornare con "Update branch") la PR di `claude/ripristino-v625` verso `main`;
+2. aspettare "Tutti i controlli" verde. Le prove del recupero delle AUTO "di prima" (v6.24) risultano SALTATE col
+   motivo, e solo se `index.html` è identico alla v6.23 salvo il numero; tutto il resto deve essere verde;
+3. unire → "Verifica del sito" deve dire "trovata v6.25".
+
+Il ripristino tiene il numero sopra quello pubblicato. Se dopo la v6.24 escono altre versioni va rifatto con lo stesso
+metodo: superati `claude/ripristino-v624`, che riportava alla v6.22, e la PR #31.
+
+Limiti:
+- con le regole 5B (R7) la v6.23 non recupera le AUTO "di prima" in attesa. È un problema solo se ce ne sono ancora;
+  in caso, prima si torna alle regole 5A;
+- se l'arbitro è acceso e serve tornare alla v6.22 (gioco senza arbitro), prima va messo `config/arbitro` = false.
 
 ## Dati esistenti (migrazione)
 

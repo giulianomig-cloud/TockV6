@@ -56,3 +56,19 @@ test("con le regole 5A e l'arbitro acceso: Gioca subito passa dal server e la cl
   assert.deepEqual(errori, []);
   assert.deepEqual(erroriConsole.splice(0), []);
 });
+
+test("arbitro acceso con le regole 5A: una sala d'attesa 'di prima' con una persona VIVA non si tocca (si entra come prima)", { ...LIMITE, skip: SALTA }, async () => {
+  await scrivi("config/arbitro", true);
+  await scrivi("games/AUTO-1", {
+    roomMode: "draw", phase: "lobby", gameId: "vecchia", dealerColor: "red",
+    draft: { players: { "tok-viva": "Viva" }, order: ["tok-viva"], seen: { "tok-viva": Date.now() } },
+  });
+  const t = await apriConArbitro("Ugo");
+  await t.page.evaluate(() => { localStorage.setItem("tock-player", JSON.stringify({ id: null, nome: "Ugo" })); startMatchmaking(); });
+  const roomId = await finché(() => t.page.evaluate(() => mm && mm.roomId), 30000);
+  assert.equal(roomId, "AUTO-1", "va con chi aspetta");
+  const s = await finché(async () => { const x = await leggi("games/AUTO-1"); return x && x.draft && Object.keys(x.draft.players || {}).length === 2 ? x : null; });
+  assert.equal(s.arbitro, undefined, "la stanza resta 'di prima'");
+  assert.ok(s.draft.players["tok-viva"], "chi aspettava è ancora lì");
+  assert.deepEqual(errori, []);
+});

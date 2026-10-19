@@ -55,7 +55,14 @@ function genera() {
     ["sessione", "arbitro", "phase", "gameId", "winnerTeam", "turnStartedAt"].map(uguale).join(" && ") + "))";
   // Riciclo delle stanze "Gioca subito" (finite o ferme da 10 minuti, nessuno collegato): nuova sessione, sala d'attesa.
   const riciclata = `${n("sessione")}.val() !== ${d("sessione")}.val() && ${n("phase")}.val() === 'lobby' && !${n("winnerTeam")}.exists()`;
-  stanza[".validate"] = `(${conArbitro}) && (((${riciclo}) && ${riciclata}) || ((${posti}) && ${creaOConserva}))`;
+  // Recupero (R7): una stanza AUTO "di prima" (senza arbitro) rimasta in sala d'attesa e SENZA nessuno seduto diventa una
+  // stanza con l'arbitro, in sala d'attesa. Non vale per stanze con posti occupati, partite iniziate o stanze private.
+  const recupero = `$room.beginsWith('AUTO-') && data.exists() && ${d("arbitro")}.val() !== true && ` +
+    `(!${d("phase")}.exists() || ${d("phase")}.val() === 'lobby') && !${d("players")}.exists() && ` +
+    `${n("phase")}.val() === 'lobby' && !${n("winnerTeam")}.exists()`;
+  // Ordine: prima posti/creazione/recupero, poi il riciclo. La regola del riciclo fa un conto con turnStartedAt: in una
+  // stanza che non lo ha va in errore, e un errore NEGA tutta la regola (anche le parti già vere dopo di lui).
+  stanza[".validate"] = `(${conArbitro}) && (((${posti}) && (${creaOConserva} || (${recupero}))) || ((${riciclo}) && ${riciclata}))`;
 
   // Classifica e "partita già contata": solo il server.
   arb.rules.leaderboard = { ".read": true };

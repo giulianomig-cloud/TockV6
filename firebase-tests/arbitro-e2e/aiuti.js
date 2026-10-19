@@ -127,4 +127,16 @@ function senzaArbitro() {
   throw new Error("index.html non ha l'arbitro ma non è la v6.22: le prove dell'arbitro non si possono saltare");
 }
 
-module.exports = { giocaDaSolo, fermaGioco, conTelefono, posizioneVincente, senzaArbitro };
+// Ripristino d'emergenza col gioco della v6.23 (commit 82e2958): non ha il recupero delle stanze AUTO "di prima"
+// (v6.24). Le prove di quel recupero si SALTANO solo se index.html è identico alla v6.23 salvo il numero.
+const COMMIT_V623 = "82e2958";
+function senzaRecupero() {
+  const radice = path.join(__dirname, "../..");
+  const html = fs.readFileSync(path.join(radice, "index.html"), "utf8");
+  if (html.includes("function mmDaRecuperare(")) return false;
+  const senzaNumero = (h) => h.replace(/const APP_VERSION = "v[0-9.]+";/, "");
+  const v623 = execSync(`git -C "${radice}" show ${COMMIT_V623}:index.html`, { maxBuffer: 64 * 1024 * 1024 }).toString();
+  if (senzaNumero(html) === senzaNumero(v623)) return "ripristino d'emergenza: il gioco è la v6.23 (senza recupero delle AUTO di prima), cambia solo il numero";
+  return senzaArbitro() || (() => { throw new Error("index.html senza recupero delle AUTO ma non è la v6.23: le prove non si possono saltare"); })();
+}
+module.exports = { giocaDaSolo, fermaGioco, conTelefono, posizioneVincente, senzaArbitro, senzaRecupero };

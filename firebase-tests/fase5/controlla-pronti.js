@@ -1,9 +1,9 @@
 // Fase 5 — SOLO LETTURA: dice, da un export JSON della console, se si può fare il passo successivo.
 //   node fase5/controlla-pronti.js export.json
 // Passo "5A" (regole proposte.json): nessun telefono collegato con una versione più vecchia della v6.22.
-// Passo "5B" (regole arbitro.json): arbitro acceso, nessun telefono collegato più vecchio della v6.23 e nessuna
-// partita "di prima" (senza arbitro) ancora in corso né stanze AUTO "di prima" in sala d'attesa (con le regole 5B non si
-// potrebbero più usare né riciclare). Non stampa nomi né carte: solo conteggi.
+// Passo "5B" (regole arbitro.json): arbitro acceso, nessun telefono collegato più vecchio della v6.24 (recupero delle
+// stanze AUTO "di prima") e nessuna
+// partita "di prima" (senza arbitro) ancora in corso. Non stampa nomi né carte: solo conteggi.
 const fs = require("node:fs");
 
 function versione(v) {
@@ -38,14 +38,14 @@ function analizza(dati, adesso = Date.now()) {
     const inCorso = g.phase && g.phase !== "lobby" && g.phase !== "finished";
     if (inCorso && !ferma) classicheInCorso++;
     if (inCorso) postiSenzaUid += Object.values(g.players || {}).filter((p) => p && !p.isBot && !p.uid).length;
-    // Con le regole 5B una stanza AUTO "di prima" in sala d'attesa non si può né usare né riciclare.
+    // Informazione: stanze AUTO "di prima" in sala d'attesa (dalla v6.24 si recuperano da sole con l'arbitro acceso).
     if (codice.startsWith("AUTO-") && (!g.phase || g.phase === "lobby")) autoDiPrimaInAttesa++;
   }
   const arbitroAcceso = !!(dati && dati.config && dati.config.arbitro === true);
   const r = {
     collegati: collegati.length,
     sottoV622: sotto("v6.22"),
-    sottoV623: sotto("v6.23"),
+    sottoV624: sotto("v6.24"),
     stanze: Object.keys(games).length,
     stanzeConArbitro: conArbitro,
     stanzeDiPrima: classiche,
@@ -56,7 +56,8 @@ function analizza(dati, adesso = Date.now()) {
     vociClassifica: Object.keys((dati && dati.leaderboard) || {}).length,
   };
   r.pronto5A = r.sottoV622 === 0;
-  r.pronto5B = arbitroAcceso && r.sottoV623 === 0 && r.partiteDiPrimaInCorso === 0 && r.autoDiPrimaInAttesa === 0;
+  // Le stanze AUTO "di prima" in sala d'attesa non bloccano più: dalla v6.24 con le regole 5B si recuperano da sole.
+  r.pronto5B = arbitroAcceso && r.sottoV624 === 0 && r.partiteDiPrimaInCorso === 0;
   return r;
 }
 
@@ -64,7 +65,7 @@ if (require.main === module) {
   const file = process.argv[2];
   if (!file) { console.error("uso: node fase5/controlla-pronti.js export.json"); process.exit(2); }
   const r = analizza(JSON.parse(fs.readFileSync(file, "utf8")));
-  console.log(`Telefoni collegati ora: ${r.collegati} (più vecchi della v6.22: ${r.sottoV622}, della v6.23: ${r.sottoV623})`);
+  console.log(`Telefoni collegati ora: ${r.collegati} (più vecchi della v6.22: ${r.sottoV622}, della v6.24: ${r.sottoV624})`);
   console.log(`Stanze: ${r.stanze} · con l'arbitro: ${r.stanzeConArbitro} · di prima: ${r.stanzeDiPrima} (in corso nelle ultime 24 ore: ${r.partiteDiPrimaInCorso})`);
   console.log(`Stanze AUTO "di prima" in sala d'attesa: ${r.autoDiPrimaInAttesa} · posti senza uid in partite iniziate: ${r.postiSenzaUidInPartite}`);
   console.log(`Arbitro acceso (config/arbitro): ${r.arbitroAcceso ? "SÌ" : "NO"} · voci in classifica: ${r.vociClassifica}`);

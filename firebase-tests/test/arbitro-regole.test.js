@@ -125,6 +125,55 @@ test("Gioca subito: una stanza finita e abbandonata si ricicla con una sessione 
   await assertFails(ladro().ref("games/AUTO-3").set(nuovaSala()), "partita in corso");
 });
 
+// R7 — recupero delle stanze AUTO "di prima" (senza arbitro) rimaste in sala d'attesa.
+const autoDiPrimaInAttesa = (extra = {}) => ({
+  gameId: "gv", roomMode: "draw", phase: "lobby",
+  draft: { players: { "t-x": "Fantasma" }, order: ["t-x"], seen: { "t-x": 1000 } },
+  ...extra,
+});
+const recuperata = (extra = {}) => ({
+  gameId: "g-nuova", roomMode: "draw", phase: "lobby", arbitro: true, sessione: "S-rec",
+  draft: { players: { "t-l": "Luca" }, order: ["t-l"], uids: { "t-l": "L" } }, ...extra,
+});
+
+test("recupero: una stanza AUTO di prima in sala d'attesa e senza posti diventa una stanza con l'arbitro", async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.database();
+    await db.ref("games/AUTO-7").set(autoDiPrimaInAttesa());
+    await db.ref("games/AUTO-8").set({ roomMode: "draw" }); // stanza vecchissima senza fase
+  });
+  await assertSucceeds(ladro().ref("games/AUTO-7").set(recuperata()));
+  await assertSucceeds(ladro().ref("games/AUTO-8").set(recuperata()));
+  // dopo il recupero vale la regola normale: la fase la cambia solo il server
+  await assertFails(ladro().ref("games/AUTO-7/phase").set("playing"));
+});
+
+test("recupero: NO se la stanza ha posti, è iniziata, è privata, ha già l'arbitro o il risultato non è una sala d'attesa con l'arbitro", async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.database();
+    await db.ref("games/AUTO-7").set(autoDiPrimaInAttesa({ players: { red: { ...ANNA } } }));
+    await db.ref("games/AUTO-8").set(autoDiPrimaInAttesa({ phase: "playing", turnStartedAt: Date.now(), players: { red: { name: "Zeno", token: "t-z" } } }));
+    await db.ref("games/AUTO-9").set(autoDiPrimaInAttesa({ phase: "exchanging" }));
+    await db.ref("games/PRIVATA1").set(autoDiPrimaInAttesa({ roomMode: "manual" }));
+    await db.ref("games/AUTO-10").set({ ...autoDiPrimaInAttesa(), arbitro: true, sessione: "S-x" });
+    await db.ref("games/AUTO-11").set(autoDiPrimaInAttesa());
+  });
+  await assertFails(ladro().ref("games/AUTO-7").set(recuperata()), "c'è qualcuno seduto");
+  await assertFails(ladro().ref("games/AUTO-8").set(recuperata()), "partita di prima iniziata (posto senza uid)");
+  await assertFails(ladro().ref("games/AUTO-9").set(recuperata()), "partita iniziata");
+  await assertFails(ladro().ref("games/PRIVATA1").set(recuperata()), "stanza privata");
+  await assertFails(ladro().ref("games/AUTO-10").set(recuperata()), "ha già l'arbitro: vale la sessione");
+  await assertFails(ladro().ref("games/AUTO-11").set(recuperata({ arbitro: false })), "deve diventare con l'arbitro");
+  await assertFails(ladro().ref("games/AUTO-11").set(recuperata({ phase: "playing" })), "deve restare in sala d'attesa");
+  await assertFails(ladro().ref("games/AUTO-11").set(recuperata({ winnerTeam: "A" })), "niente vincitore");
+  await assertFails(ladro().ref("games/AUTO-11").set(recuperata({ players: { red: { name: "Anna", token: "t-a", uid: "A" } } })), "posto di un altro uid");
+  await assertFails(anonimo().ref("games/AUTO-11").set(recuperata()), "senza login");
+  await assertSucceeds(ladro().ref("games/AUTO-11").set(recuperata({ players: { red: { name: "Luca", token: "t-l", uid: "L" } } })), "il proprio posto sì");
+  // la partita del server di una stanza in gioco resta intoccabile
+  await assertFails(ladro().ref("games/AMICI1").set(recuperata()));
+});
+
+// Ultima: carica sull'emulatore le regole 5A al posto di quelle dell'arbitro.
 test("Fase 5A (proposte.json): config e parte pubblica leggibili, mani private, arbitro non scrivibile", async () => {
   const env5a = await creaAmbiente("../regole/proposte.json");
   try {
@@ -142,3 +191,4 @@ test("Fase 5A (proposte.json): config e parte pubblica leggibili, mani private, 
     await env5a.cleanup();
   }
 });
+
