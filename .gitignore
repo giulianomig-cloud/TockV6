@@ -3,3 +3,6 @@
 regole-pubblicate*.json
 regole-backup*.json
 rapporto-fase0.json
+
+# Librerie del server (si reinstallano con npm ci)
+functions/node_modules/

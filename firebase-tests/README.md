@@ -62,6 +62,11 @@ npm run controlla-sito
   dei dati veri: `BACKUP_REGOLE=… BACKUP_DATI=…`); `fase2/controlla-dopo.js` — controllo dopo la pubblicazione.
 - `migrazione/analizza-classifica.js` — legge un export JSON della console e stampa un resoconto
   (solo lettura, nessun collegamento a Firebase).
+- **Fase 5 (v6.23, vedi `FASE5.md`)**: `regole/genera-arbitro.js` costruisce `regole/proposte.json` (5A, solo regole,
+  più i percorsi dell'arbitro in sola lettura) e `regole/arbitro.json` (5B, con l'arbitro sul server);
+  `test/arbitro-regole.test.js` (regole 5B), `arbitro-e2e/` (gioco vero + Cloud Function nell'emulatore:
+  `npm run test-arbitro`), `fase5/controlla-pronti.js` (da un export: si può fare il passo successivo?).
+  Il codice del server è in `../functions/` (test: `cd ../functions && npm test`).
 
 ## Proposta di migrazione della classifica (da approvare, NON eseguita)
 
@@ -89,6 +94,8 @@ Ora (regole proposte):
 - le voci vecchie (chiavi che iniziano con `-`) restano intatte e diventano di sola lettura.
 
 LIMITE NOTO (dimostrato dal test "LIMITE NOTO"): lo stato della partita lo scrivono i telefoni dei giocatori.
+→ Risolto dall'arbitro della Fase 5B (v6.23, `FASE5.md`): la soluzione descritta sotto è ora implementata e provata
+sull'emulatore, ma NON pubblicata (serve il piano Blaze).
 Chi è seduto può dichiarare vinta una partita (anche contro i computer, in una stanza tutta sua) e registrarsela.
 Per una classifica a prova di imbroglio serve un "arbitro" sul server, prima del lancio pubblico:
 1. Cloud Function che riceve le mosse e le applica col motore del gioco (le stesse funzioni dei test);

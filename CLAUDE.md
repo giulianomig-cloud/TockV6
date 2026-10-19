@@ -23,7 +23,7 @@
   NIENTE per l'offline (cache.addAll fallisce se manca anche un solo file). Ogni file elencato in APP_SHELL deve esistere.
 
 ## Versione
-- Versione attuale: **v6.22** (la v6 è la versione per gli store: Google Play e poi App Store).
+- Versione attuale: **v6.23** (la v6 è la versione per gli store: Google Play e poi App Store).
 - La numerazione è **ripartita** a un certo punto: le etichette più alte nei commenti
   (es. "v5.175" sulla skin Arcade retro) sono della vecchia numerazione e vanno ignorate.
 - A **ogni** aggiornamento pubblicato, aumenta la versione in entrambi i file, sempre allineati:
@@ -183,6 +183,27 @@
   `database.rules.json` resta quello di PRIMA (backup); le regole in produzione ora sono la transizione.
 - Fase 5 (regole definitive) NON fatta: va decisa a parte, solo quando tutti i telefoni sono sulla v6.22.
 - NON configurato (lo fa l'utente): environment, segreti, variabili, auto-merge.
+
+## Fase 5: arbitro sul server (v6.23, branch `claude/fase5-arbitro`, guida `firebase-tests/FASE5.md`)
+- PREPARATA e provata sull'emulatore, NIENTE pubblicato: niente regole, niente Blaze, niente funzione.
+- `functions/`: Cloud Function `arbitro` (europe-west1). `genera-motore.js` prende motore e computer DA index.html
+  (`motore-generato.js`, mai a mano; `--check` nei controlli: dopo ogni modifica al motore o ai bot va rigenerato).
+  `arbitro.js` = logica pura (turno, carta in mano, mossa legale, Jack/7, pubblico/privato, risultati).
+- Dati: `games/<stanza>` resta dei telefoni (posti, chat, `arbitro: true`, `sessione`; il server ci copia
+  phase/turnStartedAt/gameId/winnerTeam); `arbitro/<stanza>/stato` (segreto), `/pub` (pubblico, `carteInMano`),
+  `/mani/<uid>` (solo il titolare). Classifica e `credited/` le scrive solo il server a fine partita.
+- Telefono: `chiamaArbitro(azione)`; `watchRoom` unisce stanza + pub + mano (`unisciArbitro`, carte altrui "??");
+  `updateState` nelle stanze con l'arbitro cambia SOLO i campi della stanza (se il mutatore tocca la partita: errore
+  "ARBITRO"). Acceso solo per le stanze NUOVE e solo con `config/arbitro = true` (letto da `leggiConfigArbitro`).
+- Regole: `regole/genera-arbitro.js` → `proposte.json` (5A) e `arbitro.json` (5B). Ordine di rilascio R0-R7 in
+  FASE5.md (5A → Blaze → funzione → config/arbitro → attesa v6.23 → 5B). `fase5/controlla-pronti.js export.json`.
+- Prove: `functions` (npm test), `firebase-tests` (npm test, npm run test-arbitro), job CI "Arbitro sul server".
+- Ripristino: con la v6.23 pubblicata il ripristino del gioco va rifatto come v6.24 (la PR #31 usa v6.23).
+- Decisioni dell'utente ancora aperte: Blaze + avviso di spesa, chi pubblica la funzione, partite coi computer in
+  classifica, App Check.
+- Deciso dall'utente (19/10): prima di andare sugli store la classifica si AZZERA TUTTA (export di copia prima, poi
+  cancellare `leaderboard` in console, poi export di controllo). Fino ad allora resta com'è (anche i due "Yaymaris":
+  voce vecchia della rubrica + voce nuova per uid).
 
 ## Diritti (v6.09)
 - "© 2026 Mig – Tutti i diritti riservati": commento in cima a `index.html` e `sw.js`, sezione "Diritti" in `privacy.html`

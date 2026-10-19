@@ -139,10 +139,76 @@ jobs:
         if: failure()
         run: tail -n 200 firebase-tests/*-debug.log || true
 
+  arbitro:
+    name: Arbitro sul server (emulatore)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Cloud Function "arbitro" + gioco vero in Chromium, tutto sull'emulatore (progetto finto demo-tock):
+    # nessuna credenziale, niente piano Blaze, niente Firebase vero.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: C'è l'arbitro?
+        id: presenza
+        run: |
+          if [ -f functions/package.json ]; then echo "presente=si" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -n "$(git log --format=%H -1 -- functions/package.json)" ]; then
+            echo "ERRORE: functions/ è stata tolta"; exit 1
+          fi
+          echo "presente=no" >> "$GITHUB_OUTPUT"
+          echo "Nessun arbitro in questo branch: niente da provare."
+      - if: steps.presenza.outputs.presente == 'si'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            firebase-tests/package-lock.json
+            functions/package-lock.json
+      - if: steps.presenza.outputs.presente == 'si'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - if: steps.presenza.outputs.presente == 'si'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: emulatori-${{ hashFiles('firebase-tests/package-lock.json') }}
+      - name: Motore del server e regole generati allineati a index.html
+        if: steps.presenza.outputs.presente == 'si'
+        run: |
+          node functions/genera-motore.js --check
+          node firebase-tests/regole/genera-arbitro.js --check
+      - if: steps.presenza.outputs.presente == 'si'
+        working-directory: functions
+        run: npm ci
+      - name: Logica dell'arbitro (partite intere, mosse rifiutate, carte nascoste)
+        if: steps.presenza.outputs.presente == 'si'
+        working-directory: functions
+        run: npm test
+      - if: steps.presenza.outputs.presente == 'si'
+        working-directory: firebase-tests
+        run: npm ci
+      - name: Chromium per le prove del gioco (Playwright 1.56.1)
+        if: steps.presenza.outputs.presente == 'si'
+        run: |
+          npm install -g playwright@1.56.1
+          playwright install --with-deps chromium
+      - name: Due telefoni con l'arbitro, fine partita, rientro, Gioca subito, passaggio dalla Fase 5A
+        if: steps.presenza.outputs.presente == 'si'
+        working-directory: firebase-tests
+        run: npm run test-arbitro
+      - name: Log dell'emulatore se qualcosa va storto
+        if: failure()
+        run: tail -n 200 firebase-tests/*-debug.log || true
+
   esito:
     name: Tutti i controlli
     if: always()
-    needs: [regole, workflow, sito, firebase]
+    needs: [regole, workflow, sito, firebase, arbitro]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
