@@ -216,8 +216,15 @@ function risultati(s) {
     r.squadre.add(TEAM_OF[c]);
     perUid.set(p.uid, r);
   }
+  // "Contro persone" se i DUE posti della squadra avversaria sono persone (il compagno può essere un computer).
+  const tuttePersone = (squadra) => COLORS.filter((c) => TEAM_OF[c] === squadra)
+    .every((c) => s.players[c] && !s.players[c].isBot && s.players[c].uid);
   return [...perUid.values()].filter((r) => r.squadre.size === 1)
-    .map((r) => ({ uid: r.uid, nome: r.nome, vinta: r.squadre.has(s.winnerTeam) }));
+    .map((r) => {
+      const mia = [...r.squadre][0];
+      const avversari = COLORS.map((c) => TEAM_OF[c]).find((t) => t !== mia);
+      return { uid: r.uid, nome: r.nome, vinta: r.squadre.has(s.winnerTeam), contro: tuttePersone(avversari) ? "persone" : "computer" };
+    });
 }
 
 function specchio(s) {

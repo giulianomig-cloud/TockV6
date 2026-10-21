@@ -1,0 +1,33 @@
+# Verifica di R4 (solo lettura, niente segreti, niente login): la Cloud Function "arbitro" è pubblicata e rifiuta
+# chi non ha fatto il login, e l'arbitro è ancora spento (config/arbitro assente o false). Parte solo a mano.
+# "prima" = si aspetta la funzione NON ancora pubblicata (da usare prima di R4).
+name: Verifica arbitro (sola lettura)
+
+on:
+  workflow_dispatch:
+    inputs:
+      prima:
+        description: Prima di R4 (la funzione non deve esserci ancora)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  verifica:
+    name: Funzione pubblicata e arbitro spento
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verifica
+        env:
+          PRIMA: ${{ inputs.prima }}
+        run: |
+          if [ "$PRIMA" = "true" ]; then node firebase-tests/fase5/verifica-r4.js --prima; else node firebase-tests/fase5/verifica-r4.js; fi

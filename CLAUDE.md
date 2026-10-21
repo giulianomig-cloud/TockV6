@@ -218,8 +218,15 @@
   transizione, backup cifrato verificato, pubblicato `regole/proposte.json`, verifica finale ok (classifica 4 voci, vecchie
   invariate). Prova dell'utente sul telefono ok. Ritorno indietro = stesso workflow con regole_nuove "transizione" e
   regole_attese "definitive". Prossimo: R3 (Blaze) solo con nuovo ok dell'utente.
-- Decisioni dell'utente ancora aperte: Blaze + avviso di spesa, chi pubblica la funzione, partite coi computer in
-  classifica, App Check.
+- R3/R4 PREPARATI (21/10, `firebase-tests/fase5/R3-R4.md`): R3 Blaze + budget 5 € (+1 €) lo fa l'utente; R4 dal suo
+  computer Windows: `npx firebase deploy --only functions:arbitro --project tock-v6` da `firebase-tests/` (predeploy con
+  percorsi relativi, vanno anche su Windows). `functions/.env.tock-v6` = indirizzo europe-west1 del database. Verifica di
+  sola lettura: `node fase5/verifica-r4.js [--prima]` o workflow "Verifica arbitro (sola lettura)" (Claude può avviarlo).
+  Dalla sandbox di Claude cloudfunctions.net e il database NON sono raggiungibili: si verifica da GitHub Actions.
+- Classifica separata (decisa il 21/10): il server scrive anche `classificaDettaglio/<uid>/persone|computer` = {partite,
+  vinte}; "persone" = i due avversari sono persone con uid. Percorso a parte perché la versione di prima riscrive
+  leaderboard/<uid> per intero. Leggibile con 5B; schermata ancora da decidere con anteprime.
+- Decisioni dell'utente ancora aperte: come mostrare la classifica separata, App Check.
 - Deciso dall'utente (19/10): prima di andare sugli store la classifica si AZZERA TUTTA (export di copia prima, poi
   cancellare `leaderboard` in console, poi export di controllo). Fino ad allora resta com'è (anche i due "Yaymaris":
   voce vecchia della rubrica + voce nuova per uid).

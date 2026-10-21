@@ -72,6 +72,9 @@ test("nessun telefono scrive la partita del server, la classifica, i 'già conta
   await assertFails(ladro().ref("leaderboard/L").set({ nome: "Ladro", partite: 1, vinte: 1, vittorie: 1, ultimaStanza: "AMICI1", ultimaPartita: "g1" }));
   await assertFails(anna().ref("leaderboard/A").remove());
   await assertFails(anna().ref("credited/AMICI1/g1/A").set(true));
+  await assertFails(anna().ref("classificaDettaglio/A/persone/vinte").set(99));
+  await assertFails(anna().ref("classificaDettaglio/A").set({ persone: { partite: 1, vinte: 1 } }));
+  await assertSucceeds(anonimo().ref("classificaDettaglio").get());
   await assertFails(anna().ref("stats/gamesFinished").set(4));
   await assertSucceeds(anna().ref("stats/roomsCreated").set(1));
   await assertSucceeds(anonimo().ref("leaderboard").get());

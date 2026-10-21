@@ -66,6 +66,8 @@ function genera() {
 
   // Classifica e "partita già contata": solo il server.
   arb.rules.leaderboard = { ".read": true };
+  // Vittorie contro persone / contro computer (classificaDettaglio/<uid>/persone|computer): legge chiunque, scrive solo il server.
+  arb.rules.classificaDettaglio = { ".read": true };
   arb.rules.credited = { $room: { $game: { $uid: { ".read": "auth != null && auth.uid === $uid" } } } };
   // Le partite finite le conta solo il server.
   arb.rules.stats.$name[".write"] = "auth != null && $name !== 'gamesFinished'";

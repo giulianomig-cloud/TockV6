@@ -202,12 +202,31 @@ test("classifica: una persona su due posti conta una volta; su tutte e due le sq
     green: { name: "Due", uid: "u2" }, blue: { name: "Due", uid: "u3" },
   } };
   assert.deepEqual(A.risultati(s), [
-    { uid: "u1", nome: "Uno", vinta: true },
-    { uid: "u2", nome: "Due", vinta: false },
-    { uid: "u3", nome: "Due", vinta: false },
+    { uid: "u1", nome: "Uno", vinta: true, contro: "persone" },
+    { uid: "u2", nome: "Due", vinta: false, contro: "persone" },
+    { uid: "u3", nome: "Due", vinta: false, contro: "persone" },
   ]);
   s.players.green.uid = "u1";
   assert.deepEqual(A.risultati(s).map((r) => r.uid), ["u3"], "u1 è su tutte e due le squadre: non conta");
   s.winnerTeam = null;
   assert.deepEqual(A.risultati(s), []);
+});
+
+test("classifica separata: 'contro persone' solo se i due avversari sono persone (il compagno può essere un computer)", () => {
+  const conta = (players) => Object.fromEntries(A.risultati({ winnerTeam: "A", players }).map((r) => [r.uid, r.contro]));
+  const bot = { name: "Computer", isBot: true };
+  // 4 persone: tutti contro persone
+  assert.deepEqual(conta({ red: { name: "A", uid: "a" }, yellow: { name: "B", uid: "b" }, green: { name: "C", uid: "c" }, blue: { name: "D", uid: "d" } }),
+    { a: "persone", b: "persone", c: "persone", d: "persone" });
+  // 3 persone: chi ha un computer fra gli avversari gioca "contro computer"
+  assert.deepEqual(conta({ red: { name: "A", uid: "a" }, yellow: bot, green: { name: "C", uid: "c" }, blue: { name: "D", uid: "d" } }),
+    { a: "persone", c: "computer", d: "computer" });
+  // 2 persone una per squadra + 2 computer: entrambe contro computer
+  assert.deepEqual(conta({ red: { name: "A", uid: "a" }, yellow: bot, green: { name: "C", uid: "c" }, blue: bot }),
+    { a: "computer", c: "computer" });
+  // 1 persona + 3 computer
+  assert.deepEqual(conta({ red: { name: "A", uid: "a" }, yellow: bot, green: bot, blue: bot }), { a: "computer" });
+  // un posto umano senza uid (versione vecchia) non è una persona verificata
+  assert.deepEqual(conta({ red: { name: "A", uid: "a" }, yellow: bot, green: { name: "C" }, blue: { name: "D", uid: "d" } }),
+    { a: "computer", d: "computer" });
 });
