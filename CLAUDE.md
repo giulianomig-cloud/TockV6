@@ -181,8 +181,12 @@
   classifica 2 voci invariata (vittorie 5 · partite 10 · vinte 5), nulla sparito; prove simulatore 4/4 sull'emulatore
   con le regole copiate dalla console; fase2-prova 7/7 coi dati di dopo. Ritorno = incollare database.rules.json.
   `database.rules.json` resta quello di PRIMA (backup); le regole in produzione ora sono la transizione.
-- Fase 5 (regole definitive) NON fatta: va decisa a parte, solo quando tutti i telefoni sono sulla v6.22.
-- NON configurato (lo fa l'utente): environment, segreti, variabili, auto-merge.
+- Fase 5A FATTA il 21/10 (R2, vedi sotto). La 5B no.
+- Configurato dall'utente il 21/10: environment `production` (solo main, Required reviewers = l'utente), segreti
+  `FIREBASE_SERVICE_ACCOUNT` (account `rilascio-regole`, ruolo Firebase Realtime Database Admin) e `BACKUP_PASSPHRASE`;
+  variabili del repository `TOCK_PROGETTO`, `TOCK_DB_URL` (SENZA "/" finale, altrimenti il bersaglio non è confermato),
+  `PRODUZIONE_ATTIVA`. Claude avvia "Rilascio (produzione)"; parte solo dopo l'approvazione dell'utente (da Safari:
+  l'app GitHub non mostra il pulsante). Auto-merge NON configurato.
 
 ## Fase 5: arbitro sul server (v6.23, branch `claude/fase5-arbitro`, guida `firebase-tests/FASE5.md`)
 - PREPARATA e provata sull'emulatore, NIENTE pubblicato: niente regole, niente Blaze, niente funzione.
@@ -209,6 +213,11 @@
   19/10 = prima della v6.23; tutte le stanze di prima senza uid; prova `npm run r2-prova` con BACKUP_DATI 4/4; criterio:
   non prima del 22/10 pomeriggio + 3 export + controllo "v6.23" sui telefoni). Trovato per R7: stanze AUTO "di prima"
   in sala d'attesa bloccate con 5B → soluzione A (regola) o B (cancellarle), da decidere prima di R7.
+- R2 FATTO (21/10, anticipato con l'ok dell'utente: le 72 ore erano solo una precauzione): export del 20 e 21/10 "Pronto
+  5A: SÌ" e r2-prova 4/4; PROVA del rilascio riuscita (run 39595206308), poi giro vero (run 39596782074): regole prima =
+  transizione, backup cifrato verificato, pubblicato `regole/proposte.json`, verifica finale ok (classifica 4 voci, vecchie
+  invariate). Prova dell'utente sul telefono ok. Ritorno indietro = stesso workflow con regole_nuove "transizione" e
+  regole_attese "definitive". Prossimo: R3 (Blaze) solo con nuovo ok dell'utente.
 - Decisioni dell'utente ancora aperte: Blaze + avviso di spesa, chi pubblica la funzione, partite coi computer in
   classifica, App Check.
 - Deciso dall'utente (19/10): prima di andare sugli store la classifica si AZZERA TUTTA (export di copia prima, poi
