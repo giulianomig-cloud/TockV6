@@ -10,6 +10,7 @@ const FILE = {
   "attuali (database.rules.json)": path.resolve(__dirname, "../../database.rules.json"),
   "transizione": path.resolve(__dirname, "../regole/transizione.json"),
   "definitive (proposte)": path.resolve(__dirname, "../regole/proposte.json"),
+  "arbitro (5B)": path.resolve(__dirname, "../regole/arbitro.json"),
 };
 
 async function confronta(b) {

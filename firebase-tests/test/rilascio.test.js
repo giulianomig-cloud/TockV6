@@ -17,6 +17,7 @@ const REPO = path.resolve(__dirname, "../..");
 const OGGI = path.join(REPO, "database.rules.json");
 const TRANS = path.join(__dirname, "../regole/transizione.json");
 const PROP = path.join(__dirname, "../regole/proposte.json");
+const ARB = path.join(__dirname, "../regole/arbitro.json");
 const B = emulatore("rilascio-prova");
 const VERIFICA = emulatore("rilascio-verifica");
 const PASS = "passphrase-di-prova";
@@ -123,6 +124,17 @@ test.describe("rilascio delle regole", () => {
     const r2 = await rilascia({ bersaglio: B, regoleAttese: OGGI, regoleNuove: TRANS, prova: false, cartellaBackup: tmp() });
     assert.equal(r2.esito, "ok");
     assert.equal(r2.passi.find((p) => p.nome === "regole").esito, "saltato");
+  });
+  test("R7: dalla 5A alla 5B (arbitro.json) e ritorno alla 5A, niente perso", async () => {
+    await prepara();
+    const a = await rilascia({ bersaglio: B, regoleAttese: OGGI, regoleNuove: PROP, prova: false, cartellaBackup: tmp() });
+    assert.equal(a.esito, "ok", a.errore);
+    const b = await rilascia({ bersaglio: B, regoleAttese: PROP, regoleNuove: ARB, prova: false, cartellaBackup: tmp(), emulatoreVerifica: VERIFICA, passphrase: PASS });
+    assert.equal(b.esito, "ok", b.errore);
+    assert.ok(await uguali(ARB));
+    const c = await rilascia({ bersaglio: B, regoleAttese: ARB, regoleNuove: PROP, prova: false, cartellaBackup: tmp() });
+    assert.equal(c.esito, "ok", c.errore);
+    assert.ok(await uguali(PROP));
   });
   test("se le regole pubblicate non sono quelle attese si ferma PRIMA di scrivere", async () => {
     const dati = await prepara(PROP);

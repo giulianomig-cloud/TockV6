@@ -14,12 +14,12 @@ on:
       regole_nuove:
         description: Regole da pubblicare
         type: choice
-        options: [nessuna, transizione, definitive]
+        options: [nessuna, transizione, definitive, arbitro]
         default: nessuna
       regole_attese:
         description: Regole che DEVONO risultare pubblicate prima (altrimenti si ferma)
         type: choice
-        options: [attuali, transizione, definitive]
+        options: [attuali, transizione, definitive, arbitro]
         default: attuali
       migrazione:
         description: Applicare i collegamenti della classifica (segreto MIGRAZIONE_JSON)
@@ -87,7 +87,7 @@ jobs:
           VUOI_MIGRAZIONE: ${{ inputs.migrazione }}
           PROVA: ${{ inputs.prova }}
         run: |
-          file() { case "$1" in attuali) echo ../database.rules.json;; transizione) echo regole/transizione.json;; definitive) echo regole/proposte.json;; *) echo "";; esac; }
+          file() { case "$1" in attuali) echo ../database.rules.json;; transizione) echo regole/transizione.json;; definitive) echo regole/proposte.json;; arbitro) echo regole/arbitro.json;; *) echo "";; esac; }
           TOCK_REGOLE_NUOVE="$(file "$SCELTA_NUOVE")"
           TOCK_REGOLE_ATTESE="$(file "$SCELTA_ATTESE")"
           export TOCK_REGOLE_NUOVE TOCK_REGOLE_ATTESE

@@ -13,7 +13,7 @@ const migr = require("./migrazione-legacy");
 
 const BASE = path.resolve(__dirname, "..");
 // Solo questi file di regole possono andare in produzione: sono quelli provati dai controlli obbligatori.
-const REGOLE_AMMESSE = ["../database.rules.json", "regole/transizione.json", "regole/proposte.json"].map((f) => path.resolve(BASE, f));
+const REGOLE_AMMESSE = ["../database.rules.json", "regole/transizione.json", "regole/proposte.json", "regole/arbitro.json"].map((f) => path.resolve(BASE, f));
 
 async function rilascia(o) {
   const b = o.bersaglio, passi = [], log = o.log || (() => {});
