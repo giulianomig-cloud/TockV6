@@ -223,6 +223,11 @@
   percorsi relativi, vanno anche su Windows). `functions/.env.tock-v6` = indirizzo europe-west1 del database. Verifica di
   sola lettura: `node fase5/verifica-r4.js [--prima]` o workflow "Verifica arbitro (sola lettura)" (Claude può avviarlo).
   Dalla sandbox di Claude cloudfunctions.net e il database NON sono raggiungibili: si verifica da GitHub Actions.
+- R3 FATTO dall'utente (Blaze + budget). R4 FATTO il 24/10 da Cloud Shell (browser): commit 554a03c, `firebase.json` della
+  RADICE (con quello di firebase-tests il caricamento dava "../functions is outside of project directory"), comando
+  `firebase-tests/node_modules/.bin/firebase deploy --only functions:arbitro --project tock-v6`; pulizia immagini a 1
+  giorno (`functions:artifacts:setpolicy`). Verifica arbitro (GitHub) OK: funzione pubblicata, arbitro spento.
+  Prossimo: R5 (`config/arbitro` = true, booleano) solo con ok dell'utente.
 - Classifica separata (decisa il 21/10): il server scrive anche `classificaDettaglio/<uid>/persone|computer` = {partite,
   vinte}; "persone" = i due avversari sono persone con uid. Percorso a parte perché la versione di prima riscrive
   leaderboard/<uid> per intero. Leggibile con 5B; schermata ancora da decidere con anteprime.
