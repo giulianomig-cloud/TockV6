@@ -103,6 +103,10 @@ async function registraRisultato(db, stanzaId, s) {
     upd["leaderboard/" + r.uid + "/vittorie"] = ServerValue.increment(r.vinta ? 1 : 0);
     upd["leaderboard/" + r.uid + "/ultimaStanza"] = stanzaId;
     upd["leaderboard/" + r.uid + "/ultimaPartita"] = s.gameId;
+    // Separazione (21/10): contro persone / contro computer, in un percorso a parte che i telefoni non possono
+    // scrivere (la versione "di prima" riscrive leaderboard/<uid> per intero e cancellerebbe campi in più).
+    upd["classificaDettaglio/" + r.uid + "/" + r.contro + "/partite"] = ServerValue.increment(1);
+    upd["classificaDettaglio/" + r.uid + "/" + r.contro + "/vinte"] = ServerValue.increment(r.vinta ? 1 : 0);
   }
   await db.ref().update(upd);
 }

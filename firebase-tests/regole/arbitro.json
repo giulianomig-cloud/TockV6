@@ -111,6 +111,9 @@
           }
         }
       }
+    },
+    "classificaDettaglio": {
+      ".read": true
     }
   }
 }

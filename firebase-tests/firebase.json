@@ -10,8 +10,8 @@
         ".env.demo-tock"
       ],
       "predeploy": [
-        "node \"$RESOURCE_DIR/genera-motore.js\" --check",
-        "npm --prefix \"$RESOURCE_DIR\" test"
+        "node ../functions/genera-motore.js --check",
+        "npm --prefix ../functions test"
       ]
     }
   ],

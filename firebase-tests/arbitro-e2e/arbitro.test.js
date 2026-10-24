@@ -124,6 +124,9 @@ test("fine partita: classifica scritta dal server una volta sola, poi rivincita"
   assert.deepEqual({ p: lbA.partite, v: lbA.vinte, w: lbA.vittorie, n: lbA.nome }, { p: 1, v: 1, w: 1, n: "Anna" });
   assert.deepEqual({ p: lbB.partite, v: lbB.vinte, w: lbB.vittorie }, { p: 1, v: 0, w: 0 });
   assert.equal((await leggi("credited/ARB2/" + gameId))[uidA], true);
+  // classifica separata: Anna e Bruno hanno un computer fra gli avversari
+  assert.deepEqual(await finché(() => leggi("classificaDettaglio/" + uidA)), { computer: { partite: 1, vinte: 1 } });
+  assert.deepEqual(await leggi("classificaDettaglio/" + uidB), { computer: { partite: 1, vinte: 0 } });
   assert.equal(await leggi("stats/gamesFinished"), 1);
   assert.deepEqual(await leggi("leaderboard/-vecchiaVoce"), { nome: "Vecchia", partite: 5, vinte: 3, vittorie: 3 }, "voci vecchie intatte");
   assert.equal((await leggi("games/ARB2")).winnerTeam, "A");
@@ -136,6 +139,7 @@ test("fine partita: classifica scritta dal server una volta sola, poi rivincita"
   await finché(async () => { const st = await leggi("arbitro/ARB2/stato"); return st.phase === "exchanging" && st.gameId !== gameId; });
   await finché(() => a.page.evaluate(() => currentState.phase === "exchanging" && currentState.hands[myColor].length === 5));
   assert.equal((await leggi("leaderboard/" + uidA)).partite, 1);
+  assert.deepEqual((await leggi("classificaDettaglio/" + uidA)).computer, { partite: 1, vinte: 1 }, "rivincita: niente conteggi in più");
   assert.deepEqual(errori, []);
   assert.deepEqual(erroriConsole.splice(0), []);
 });
