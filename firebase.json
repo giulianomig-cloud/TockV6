@@ -1,0 +1,18 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "arbitro",
+      "runtime": "nodejs22",
+      "ignore": [
+        "node_modules",
+        "test",
+        ".env.demo-tock"
+      ],
+      "predeploy": [
+        "node functions/genera-motore.js --check",
+        "npm --prefix functions test"
+      ]
+    }
+  ]
+}
